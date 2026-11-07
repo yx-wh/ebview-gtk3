@@ -887,10 +887,11 @@ GtkWidget *create_dict_window()
 
 	gtk_window_set_focus(GTK_WINDOW(main_window), word_entry);
 
-	if(word_history != NULL)	
-		// gtk_combo_set_popdown_strings(GTK_COMBO(combo_word), word_history);
-
-
+	/* The word entry is a plain GtkEntry in this port; the old
+	 * gtk_combo_set_popdown_strings() call was commented out, which left
+	 * the if() with no body and made the next statement conditional.  With
+	 * an empty history (first run, or an unparsable history.xml) that
+	 * skipped the button creation entirely and everything below used NULL. */
 	button_start = gtk_button_new();
 	gtk_button_set_relief(GTK_BUTTON(button_start), GTK_RELIEF_NONE);
 	gtk_box_pack_start(GTK_BOX(hbox), button_start, FALSE, FALSE, 0);
