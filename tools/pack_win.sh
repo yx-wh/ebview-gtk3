@@ -61,6 +61,7 @@ pack_one() {
         rm -rf \"\$DEST\"; mkdir -p \"\$DEST\"
         cp \"\$BUILD/ebview.exe\" \"\$DEST/\"
         [ -f \"\$BUILD/ebdump.exe\" ] && cp \"\$BUILD/ebdump.exe\" \"\$DEST/\" || true
+        [ -f \"\$SRC/tools/ebview-format\" ] && cp \"\$SRC/tools/ebview-format\" \"\$DEST/\" || true
 
         # 依赖闭包：ldd 递归列出，只拷工具链前缀里的 DLL（系统 DLL 不拷）。
         # ldd 打印的可能是 MSYS 挂载别名（/ucrt64/bin/x.dll），也可能是盘符绝对
