@@ -1012,6 +1012,12 @@ G_GNUC_UNUSED static gint ebook_full_search_old(BOOK_INFO *binfo, char *word, gi
 			}
 
 			rp->heading = iconv_convert("euc-jp", "utf-8", heading);
+			{
+				gchar *tmp_str;
+				tmp_str = rp->heading;
+				rp->heading = decode_gb2312_marks(rp->heading);
+				g_free(tmp_str);
+			}
 			rp->word = iconv_convert("euc-jp", "utf-8", word);
 			rp->type = RESULT_TYPE_EB;
 			rp->data.eb.book_info = binfo;
@@ -1187,6 +1193,12 @@ static gint ebook_full_search(BOOK_INFO *binfo, char *word, gint method, gchar *
 			}
 		
 			rp->heading = iconv_convert("euc-jp", "utf-8", heading);
+			{
+				gchar *tmp_str;
+				tmp_str = rp->heading;
+				rp->heading = decode_gb2312_marks(rp->heading);
+				g_free(tmp_str);
+			}
 			rp->word = iconv_convert("euc-jp", "utf-8", word);
 			rp->type = RESULT_TYPE_EB;
 			rp->data.eb.book_info = binfo;
@@ -1780,6 +1792,12 @@ gint ebook_simple_search2(BOOK_INFO *binfo, char *word, gint method, gchar *titl
 			heading[len] = '\0';
 
 			rp->heading = iconv_convert("euc-jp", "utf-8", heading);
+			{
+				gchar *tmp_str;
+				tmp_str = rp->heading;
+				rp->heading = decode_gb2312_marks(rp->heading);
+				g_free(tmp_str);
+			}
 			if(method == SEARCH_METHOD_MULTI)
 				rp->word = NULL;
 			else
