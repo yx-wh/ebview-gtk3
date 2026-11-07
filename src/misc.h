@@ -24,6 +24,7 @@
 
 void beep();
 void remove_space(gchar *f);
+const gchar *ui_language(void);
 void alloc_colors();
 gboolean find_file(gchar *filename);
 gboolean find_config_file(gchar *filename);

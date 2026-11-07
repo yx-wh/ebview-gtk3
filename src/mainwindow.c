@@ -376,7 +376,6 @@ static gint entry_activate_event(GtkWidget *widget, GdkEventKey *event){
 
 void show_about()
 {
-	gchar *lang;
 	gchar buff[65536];
 	gchar filename[512];
 	FILE *fp;
@@ -384,18 +383,13 @@ void show_about()
 
 	LOG(LOG_DEBUG, "IN : show_about()");
 
-#ifdef __WIN32__
-	sprintf(filename, "%s%sabout.jp", package_dir, DIR_DELIMITER);
-#else
-	lang = getenv("LANG");
-	if(lang == NULL){
-		sprintf(filename, "%s%sabout.en", package_dir, DIR_DELIMITER);
-	} else if(strncmp(lang, "ja_JP", 5) == 0){
+	/* Only about.en and about.jp exist, and the text view expects EUC-JP,
+	 * which cannot carry Chinese at all, so everything but Japanese falls
+	 * back to the English file. */
+	if(strcmp(ui_language(), "ja") == 0)
 		sprintf(filename, "%s%sabout.jp", package_dir, DIR_DELIMITER);
-	} else {
+	else
 		sprintf(filename, "%s%sabout.en", package_dir, DIR_DELIMITER);
-	}
-#endif
 
 	fp = fopen(filename, "r");
 	if(fp == NULL){
@@ -419,30 +413,39 @@ void show_about()
 void show_usage()
 {
 
-	gchar *lang;
-	gchar filename[512];
-	gchar *tmp_str;
+	gchar *path;
+	const gchar *lang = ui_language();
 
 	LOG(LOG_DEBUG, "IN : show_usage()");
 
-#ifdef __WIN32__
-	sprintf(filename, "%s%shelp%sindex.html", package_dir,
-		DIR_DELIMITER, DIR_DELIMITER);
-#else
-	lang = getenv("LANG");
-	if(lang == NULL){
-		sprintf(filename, "file://%s/help/en/index.html", package_dir);
-	} else if(strncmp(lang, "ja_JP", 5) == 0){
-		sprintf(filename, "file://%s/help/ja/index.html", package_dir);
-	} else {
-		sprintf(filename, "file://%s/help/en/index.html", package_dir);
+	/* help/<lang>/index.html, falling back to English when that language
+	 * level was not installed. */
+	path = g_strdup_printf("%s%shelp%s%s%sindex.html", package_dir,
+			       DIR_DELIMITER, DIR_DELIMITER, lang,
+			       DIR_DELIMITER);
+	if(!g_file_test(path, G_FILE_TEST_IS_REGULAR)){
+		g_free(path);
+		path = g_strdup_printf("%s%shelp%sen%sindex.html", package_dir,
+				       DIR_DELIMITER, DIR_DELIMITER,
+				       DIR_DELIMITER);
+	}
+	LOG(LOG_DEBUG, "Help page : %s", path);
+
+#ifndef __WIN32__
+	{
+		/* Unix hands the browser a file:// URL; ShellExecute() wants a
+		 * plain path and does that itself. */
+		gchar *tmp = path;
+		path = g_strdup_printf("file://%s", tmp);
+		g_free(tmp);
 	}
 #endif
-	tmp_str = iconv_convert("utf-8", "euc-jp", _("Help will be shown in external web browser."));
-	show_text(0, tmp_str, NULL);
-	g_free(tmp_str);
+	/* The content pane takes EUC-JP, which cannot represent Chinese, so
+	 * show the notice in the status bar (UTF-8) instead. */
+	status_message(_("Help will be shown in external web browser."));
 
-	launch_web_browser(filename);
+	launch_web_browser(path);
+	g_free(path);
 
 	set_current_result(NULL);
 

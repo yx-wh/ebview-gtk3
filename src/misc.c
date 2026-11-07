@@ -77,6 +77,66 @@ void remove_space(gchar *f){
 */
 }
 
+/* Language tag used to pick help/about files, chosen in the same order
+ * gettext uses so that the manual matches the UI.  Returns "ja", "zh_CN",
+ * "zh_TW" or "en". */
+const gchar *ui_language(void)
+{
+	static gchar tag[16];
+	const gchar *raw;
+	gchar *loc = NULL;
+	gint i = 0;
+
+#ifdef __WIN32__
+	loc = g_win32_getlocale();
+	raw = loc;
+#else
+	raw = getenv("LC_ALL");
+	if(raw == NULL || *raw == '\0')
+		raw = getenv("LC_MESSAGES");
+	if(raw == NULL || *raw == '\0')
+		raw = getenv("LANG");
+
+	/* gettext lets LANGUAGE override the locale, and that is how most
+	 * users ask for a translation other than the one their locale
+	 * implies (LANGUAGE=zh_CN:en with an English LANG).  Follow the same
+	 * rule, including the one exception gettext documents: LANGUAGE is
+	 * ignored when the locale is exactly C or POSIX, so that a user who
+	 * deliberately asked for untranslated output is not overridden. */
+	if(!((raw != NULL) && ((strcmp(raw, "C") == 0) ||
+			       (strcmp(raw, "POSIX") == 0)))){
+		const gchar *lang = getenv("LANGUAGE");
+		if(lang != NULL && *lang != '\0')
+			raw = lang;
+	}
+#endif
+
+	if(raw == NULL || *raw == '\0'){
+		g_free(loc);
+		return "en";
+	}
+
+	/* "zh_CN.UTF-8@euro" -> "zh_CN", and take the first entry of a
+	 * LANGUAGE priority list ("zh_CN:ja:en" -> "zh_CN"). */
+	while(i < (gint)sizeof(tag) - 1 && raw[i] != '\0'
+	      && raw[i] != '.' && raw[i] != '@' && raw[i] != ':'){
+		tag[i] = raw[i];
+		i++;
+	}
+	tag[i] = '\0';
+	g_free(loc);
+
+	if(strncmp(tag, "ja", 2) == 0)
+		return "ja";
+	if(strncmp(tag, "zh", 2) == 0){
+		if(strstr(tag, "_TW") || strstr(tag, "_HK") || strstr(tag, "_MO")
+		   || strstr(tag, "_Hant"))
+			return "zh_TW";
+		return "zh_CN";
+	}
+	return "en";
+}
+
 #ifdef __WIN32__
 char *getdcwd(int drv, char *path, int len){
 	return(_getdcwd(drv, path, len));
