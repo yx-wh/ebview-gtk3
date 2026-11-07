@@ -18,7 +18,9 @@
 
 #include "defs.h"
 #include "global.h"
+#ifdef __WIN32__
 #include <direct.h>
+#endif
 
 
 void beep(){

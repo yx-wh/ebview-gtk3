@@ -58,3 +58,12 @@ po/ja.po.utf-8
 src/ebview.exe
 util/ebdump.exe
 po/stamp-cat-id
+
+# CMake build artifacts (build* is already covered above)
+build/
+!build.sh
+!config.h.in
+compile_commands.json
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
