@@ -250,6 +250,9 @@ static gint method_changed (GtkWidget *combo){
 		gtk_notebook_set_current_page(GTK_NOTEBOOK(note_bar), 0);
 
 	} else 	if(method == SEARCH_METHOD_GREP){
+		/* File Search needs the directory tree to pick a search scope. */
+		if(note_page != 3)
+			gtk_notebook_set_current_page(GTK_NOTEBOOK(note_tree), 3);
 		gtk_notebook_set_current_page(GTK_NOTEBOOK(note_bar), 1);
 	} else {
 		gtk_notebook_set_current_page(GTK_NOTEBOOK(note_bar), 0);
@@ -467,6 +470,8 @@ void go_down(){
 	LOG(LOG_DEBUG, "OUT : go_down()");
 }
 
+extern gboolean bshowing_result;
+
 void note_switch_page(GtkNotebook *notebook, GtkWidget *page, gint page_num, gpointer data)
 {
 	(void)notebook; (void)page; (void)data;
@@ -484,7 +489,8 @@ void note_switch_page(GtkNotebook *notebook, GtkWidget *page, gint page_num, gpo
 			eb_web = 0;
 			gtk_notebook_set_current_page(GTK_NOTEBOOK(note_text), 0);
 
-			if(active_id && strcmp(active_id, _("Internet Search")) == 0)
+			if(!bshowing_result && active_id &&
+			   strcmp(active_id, _("Internet Search")) == 0)
 				gtk_combo_box_set_active_id(GTK_COMBO_BOX(combo_method), _("Automatic Search"));
 			break;
 
