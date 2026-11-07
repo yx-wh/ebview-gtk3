@@ -95,7 +95,15 @@ void start_search(){
 		return;
 
 	word = gtk_entry_get_text(GTK_ENTRY(word_entry));
-	euc_str = iconv_convert("utf-8", "euc-jp", word);
+	method = ebook_search_method();
+	/* EPWING lookups need EUC-JP (JIS X 0208), but File Search matches
+	 * several encodings itself and must keep the original UTF-8 word:
+	 * converting to EUC-JP first replaces characters outside JIS X 0208
+	 * (simplified Chinese, emoji) with placeholders. */
+	if(method == SEARCH_METHOD_GREP)
+		euc_str = g_strdup(word);
+	else
+		euc_str = iconv_convert("utf-8", "euc-jp", word);
 	remove_space(euc_str);
 	if(strlen(euc_str) == 0){
 		popup_warning(_("Please enter search word."));
@@ -105,7 +113,6 @@ void start_search(){
 
 
 	if(strlen(euc_str) != 0){
-		method = ebook_search_method();
 		if(method == SEARCH_METHOD_INTERNET){
 			web_search();
 		} else 	if(method == SEARCH_METHOD_GREP){
