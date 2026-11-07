@@ -536,79 +536,48 @@ static gboolean ok_pref(GtkWidget *widget,gpointer *data){
 
 
 void  calculate_font_size(){
-		
-	PangoFontDescription* desc;
-	PangoLanguage* lang;
-	PangoFontMap* fontmap;
-#ifndef __WIN32__
-	Display *display;
-#endif
-	PangoContext *context;
-	PangoFontset* fontset;
-	PangoFontMetrics* metrics;
-	gint ascent;
-	gint descent;
-	gint width;
-	gint height;
+	PangoFontDescription *desc;
+	gdouble dpi = 96.0;
+	gint pt;
+	gdouble px;
 
-	font_height = 16;
-	font_width =  8;
-	font_ascent = 2;
+	font_height  = 16;
+	font_width   = 8;
+	font_ascent  = 2;
 	font_descent = 4;
 
-
 	desc = pango_font_description_from_string(fontset_normal);
-	lang =  pango_language_from_string("ja");
-
-#ifdef __WIN32__
-	fontmap = pango_win32_font_map_for_display();
-#else
-	display = gdk_x11_display_get_xdisplay(gdk_display_get_default());
-	if(display == NULL){
-		LOG(LOG_INFO, "display == NULL");
+	if(desc == NULL)
 		return;
+
+	/* The Pango-Win32 font-loading backend shipped with current MSYS2
+	 * (Pango 1.58 + GTK+ 3) crashes inside load_fontset()/get_metrics()
+	 * whenever it is asked to resolve a font, so we derive the text-cell
+	 * metrics directly from the description's point size and the screen
+	 * resolution instead of loading a font.  This is accurate enough for
+	 * row/column layout and avoids the crash entirely (ported from the
+	 * GTK2 fix e8d9c48). */
+	pt = pango_font_description_get_size(desc) / PANGO_SCALE;
+	if(pt <= 0)
+		pt = 9;
+
+	{
+		GdkScreen *screen = gdk_screen_get_default();
+		if(screen != NULL){
+			gdouble r = gdk_screen_get_resolution(screen);
+			if(r > 0.0)
+				dpi = r;
+		}
 	}
 
-	fontmap = pango_cairo_font_map_get_default();
-#endif
+	px = pt * dpi / 72.0;            /* points -> device pixels */
 
-	if(fontmap == NULL){
-		LOG(LOG_INFO, "fontmap == NULL");
-		return;
-	}
+	font_height  = (gint)(px + 0.5);
+	font_ascent  = (gint)(px * 0.82 + 0.5);
+	font_descent = font_height - font_ascent;
+	font_width   = (gint)(px * 0.55 + 0.5) + 2;
 
-
-	context = gtk_widget_get_pango_context(main_window);
-	if(context == NULL){
-		LOG(LOG_INFO, "context == NULL");
-		return;
-	}
-
-	fontset = pango_font_map_load_fontset(fontmap,
-					      context,
-					      desc,
-					      lang);
-	if(fontset == NULL){
-		LOG(LOG_INFO, "fontset == NULL");
-		return;
-	}
-
-	metrics = pango_fontset_get_metrics(fontset);
-	if(metrics == NULL){
-		LOG(LOG_INFO, "metrics == NULL");
-		return;
-	}
-
-	ascent = pango_font_metrics_get_ascent(metrics);
-	descent = pango_font_metrics_get_descent(metrics);
-	width = pango_font_metrics_get_approximate_char_width(metrics);
-	height = ascent + descent;
-
-	font_height = height / 1000;
-	font_width = width / 1000 + 2;
-	font_ascent = ascent / 1000;
-	font_descent = descent / 1000;
-
+	pango_font_description_free(desc);
 }
 
 
