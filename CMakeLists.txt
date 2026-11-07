@@ -162,7 +162,7 @@ if(WIN32)
 endif()
 
 # Stage a runtime data tree in the build dir so the app can be launched
-# straight after compiling: EBVIEW_DATADIR=build/share/ebview ./build/ebview
+# straight after compiling; locate_package_dir() finds it automatically.
 set(EBVIEW_RUN_DATADIR "${CMAKE_CURRENT_BINARY_DIR}/share/ebview")
 file(MAKE_DIRECTORY "${EBVIEW_RUN_DATADIR}/help")
 file(COPY
@@ -239,7 +239,9 @@ install(FILES "${CMAKE_CURRENT_BINARY_DIR}/data/ebview.metainfo.xml"
     DESTINATION "${CMAKE_INSTALL_DATADIR}/metainfo")
 install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/pixmaps/ebview.xpm"
     DESTINATION "${CMAKE_INSTALL_DATADIR}/pixmaps")
-install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/README"
+install(FILES
+    "${CMAKE_CURRENT_SOURCE_DIR}/README.md"
+    "${CMAKE_CURRENT_SOURCE_DIR}/README.ja"
     DESTINATION "${CMAKE_INSTALL_DOCDIR}" OPTIONAL)
 
 message(STATUS "EBView ${PROJECT_VERSION} (GTK3)")
