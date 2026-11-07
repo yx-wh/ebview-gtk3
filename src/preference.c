@@ -321,10 +321,10 @@ void initialize_preference(){
 #endif
 
 #ifdef __WIN32__
-	fontset_normal = strdup("ms gothic 9");
-	fontset_bold = strdup("ms gothic 9");
-	fontset_italic = strdup("times new roman Italic 9");
-	fontset_superscript = strdup("ms gothic 7");
+	fontset_normal = strdup("ms gothic 12");
+	fontset_bold = strdup("ms gothic 12");
+	fontset_italic = strdup("times new roman Italic 12");
+	fontset_superscript = strdup("ms gothic 8");
 #else
 	/* Kochi Mincho/Gothic are long gone. Noto CJK JP keeps Japanese
 	 * glyphs in one family instead of relying on font fallback. */
