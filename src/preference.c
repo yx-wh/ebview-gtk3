@@ -309,10 +309,15 @@ void initialize_preference(){
 	browser_template = strdup("");
 	open_template = strdup("\"C:\\Program Files\\Hidemaru\\hidemaru.exe\" /j%l %f");
 #else
-	mpeg_template = strdup("plaympeg %f");
-	wave_template = strdup("playwave %f");
-	browser_template = strdup("gnome-moz-remote %f");
-	open_template = strdup("emacs +%l %f");
+	/* plaympeg, playwave, gnome-moz-remote and emacs are all gone from a
+	 * modern desktop.  xdg-open is the XDG standard entry point and picks
+	 * the right application from the MIME type.  It has no line-number
+	 * option, so the old emacs "%l" cannot be kept: open_template now
+	 * just opens the file. */
+	mpeg_template = strdup("xdg-open %f");
+	wave_template = strdup("xdg-open %f");
+	browser_template = strdup("xdg-open %f");
+	open_template = strdup("xdg-open %f");
 #endif
 
 #ifdef __WIN32__
