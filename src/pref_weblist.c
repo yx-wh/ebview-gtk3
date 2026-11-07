@@ -585,11 +585,13 @@ GtkWidget *pref_start_weblist()
 	gtk_grid_attach(GTK_GRID(table), combo_charcode, 1, 5, 1, 1);
 	gtk_size_group_add_widget (entry_group, combo_charcode);
 
-	gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(combo_charcode), "euc-jp");
-	gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(combo_charcode), "shift_jis");
-	gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(combo_charcode), "iso-2022-jp");
-	gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(combo_charcode), "utf-8");
-	gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(combo_charcode), "ascii");
+	/* append_text() leaves the ID column NULL in GTK 3.24, so the
+	 * set/get_active_id() calls below would silently fail. */
+	gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo_charcode), "euc-jp", "euc-jp");
+	gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo_charcode), "shift_jis", "shift_jis");
+	gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo_charcode), "iso-2022-jp", "iso-2022-jp");
+	gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo_charcode), "utf-8", "utf-8");
+	gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo_charcode), "ascii", "ascii");
 
 
 	hbox2 = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 5);

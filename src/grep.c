@@ -1308,7 +1308,10 @@ GtkTreeIter iter;
 	if(g_list_length(list) != 0){
 		GList *l;
 		for(l = list; l; l = l->next){
-			gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(combo_dirgroup), (char *)l->data);
+			/* append_text() leaves the ID column NULL in GTK 3.24,
+			 * so set/get_active_id() would silently fail. */
+			gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo_dirgroup),
+						  (char *)l->data, (char *)l->data);
 		}
 	}
 

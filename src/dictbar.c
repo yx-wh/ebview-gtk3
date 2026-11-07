@@ -452,13 +452,17 @@ GtkWidget *create_dict_bar()
 	}
 
 if(g_list_length(list) != 0){
-		GList *l;
-		for(l = list; l; l = l->next){
-			gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(combo_group), (char *)l->data);
-		}
+	GList *l;
+	for(l = list; l; l = l->next){
+		/* append_text() leaves the ID column NULL in GTK 3.24,
+		 * which makes set/get_active_id() silently fail.  Pass
+		 * the title as both ID and text. */
+		gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(combo_group),
+					  (char *)l->data, (char *)l->data);
 	}
+}
 
-	if(active_found == TRUE){
+if(active_found == TRUE){
 		gtk_tree_model_get(GTK_TREE_MODEL(dict_store), 
 				   &active_iter, 
 				   DICT_TITLE_COLUMN, &title,
