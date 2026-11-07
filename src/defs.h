@@ -21,7 +21,7 @@
 /* Disable old GTK+ functions */
 //#define GTK_DISABLE_DEPRECATED 1
 
-#include "../config.h"
+#include "config.h"
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <sys/types.h>

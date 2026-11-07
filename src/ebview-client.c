@@ -27,7 +27,7 @@
 #include <sys/un.h>
 #endif
 
-#include "../config.h"
+#include "config.h"
 
 int main(int argc, char **argv) {
 #ifdef __WIN32__

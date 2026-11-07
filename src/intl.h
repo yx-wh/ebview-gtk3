@@ -19,7 +19,7 @@
 #ifndef __INTL_H__
 #define __INTL_H__
 
-#include "../config.h"
+#include "config.h"
 
 #ifdef HAVE_LIBINTL_H
 #define ENABLE_NLS 1
