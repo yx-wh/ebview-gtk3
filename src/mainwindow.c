@@ -1078,8 +1078,10 @@ GtkWidget *create_dict_window()
 
 	// Multi search tree
 	widget =  create_multi_tree();
-	//image = create_image(IMAGE_MULTI);
-	image = gtk_image_new_from_icon_name("index-card", GTK_ICON_SIZE_SMALL_TOOLBAR);
+	/* GTK3 dropped GTK_STOCK_INDEX, and "index-card" is missing from many
+	 * icon themes, which rendered the tab as a broken image.  Use the
+	 * bundled XPM, like the globe tab below. */
+	image = create_image(IMAGE_MULTI);
 	gtk_notebook_append_page(GTK_NOTEBOOK(note_tree), widget, image);
 
 
