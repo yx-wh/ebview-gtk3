@@ -290,7 +290,8 @@ void initialize_preference(){
 					G_TYPE_POINTER,
 					G_TYPE_BOOLEAN,
 					G_TYPE_STRING,
-					G_TYPE_STRING);
+					G_TYPE_STRING,
+					G_TYPE_BOOLEAN);
 
 	stemming_en_store = gtk_list_store_new(STEMMING_N_COLUMNS,
 					    G_TYPE_STRING,

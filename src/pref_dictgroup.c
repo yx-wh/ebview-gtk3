@@ -313,11 +313,19 @@ static void cell_edited(GtkCellRendererText *cell,
 
 	if(binfo == NULL){
 		LOG(LOG_CRITICAL, _("Failed to load dictionary."));
+		/* Keep the row (and therefore the configuration entry) but mark
+		 * it unavailable, so the user does not lose it by accident. */
+		gtk_tree_store_set(GTK_TREE_STORE(dict_store), &iter,
+				   DICT_MEMBER_COLUMN, NULL,
+				   DICT_AVAILABLE_COLUMN, FALSE,
+				   -1);
+		gtk_tree_path_free (path);
 		return;
 	}
 
 	gtk_tree_store_set(GTK_TREE_STORE(dict_store), &iter,
 			   DICT_MEMBER_COLUMN, binfo,
+			   DICT_AVAILABLE_COLUMN, TRUE,
 			   -1);
 
 	gtk_tree_path_free (path);
@@ -422,6 +430,7 @@ static void up_item(GtkWidget *widget,gpointer *data)
 					gboolean active;
 					BOOK_INFO *binfo;
 					gboolean editable;
+					gboolean available;
 					gchar *fg, *bg;
 
 
@@ -441,6 +450,7 @@ static void up_item(GtkWidget *widget,gpointer *data)
 							   DICT_ACTIVE_COLUMN, &active,
 							   DICT_MEMBER_COLUMN, &binfo,
 							   DICT_EDITABLE_COLUMN, &editable,
+							   DICT_AVAILABLE_COLUMN, &available,
 							   DICT_FGCOLOR_COLUMN, &fg,
 							   DICT_BGCOLOR_COLUMN, &bg,
 							   -1);
@@ -455,6 +465,7 @@ static void up_item(GtkWidget *widget,gpointer *data)
 							   DICT_ACTIVE_COLUMN, active,
 							   DICT_MEMBER_COLUMN, binfo,
 							   DICT_EDITABLE_COLUMN, editable,
+							   DICT_AVAILABLE_COLUMN, available,
 							   DICT_FGCOLOR_COLUMN, fg,
 							   DICT_BGCOLOR_COLUMN, bg,
 
@@ -541,6 +552,7 @@ static void down_item(GtkWidget *widget,gpointer *data)
 					gboolean active;
 					BOOK_INFO *binfo;
 					gboolean editable;
+					gboolean available;
 					gchar *fg, *bg;
 
 					gtk_tree_store_prepend(GTK_TREE_STORE(dict_store),
@@ -559,6 +571,7 @@ static void down_item(GtkWidget *widget,gpointer *data)
 							   DICT_ACTIVE_COLUMN, &active,
 							   DICT_MEMBER_COLUMN, &binfo,
 							   DICT_EDITABLE_COLUMN, &editable,
+							   DICT_AVAILABLE_COLUMN, &available,
 							   DICT_FGCOLOR_COLUMN, &fg,
 							   DICT_BGCOLOR_COLUMN, &bg,
 							   -1);
@@ -573,6 +586,7 @@ static void down_item(GtkWidget *widget,gpointer *data)
 							   DICT_ACTIVE_COLUMN, active,
 							   DICT_MEMBER_COLUMN, binfo,
 							   DICT_EDITABLE_COLUMN, editable,
+							   DICT_AVAILABLE_COLUMN, available,
 							   DICT_FGCOLOR_COLUMN, fg,
 							   DICT_BGCOLOR_COLUMN, bg,
 							   -1);
@@ -641,6 +655,7 @@ static void add_group(GtkWidget *widget,gpointer *data)
 			   DICT_TYPE_COLUMN, 0,
 			   DICT_TITLE_COLUMN, name,
 			   DICT_EDITABLE_COLUMN, TRUE,
+			   DICT_AVAILABLE_COLUMN, TRUE,
 			   -1);
 
 	gtk_entry_set_text(GTK_ENTRY(entry_group_name), "");
@@ -752,6 +767,7 @@ static int enumerate_subbook(char *path)
 						   DICT_TYPE_COLUMN, 0,
 						   DICT_TITLE_COLUMN, "Disk Search Result",
 						   DICT_EDITABLE_COLUMN, TRUE,
+						   DICT_AVAILABLE_COLUMN, TRUE,
 						   -1);
 
 			}
@@ -772,6 +788,7 @@ static int enumerate_subbook(char *path)
 					    DICT_EDITABLE_COLUMN, FALSE,
 					    DICT_FGCOLOR_COLUMN, NULL,
 					    DICT_BGCOLOR_COLUMN, NULL,
+					    DICT_AVAILABLE_COLUMN, TRUE,
 					    -1);
 
 			tree_path = gtk_tree_model_get_path(GTK_TREE_MODEL(dict_store), &parent_iter);
@@ -963,6 +980,7 @@ static gboolean update_last_dictionary()
 			   DICT_ACTIVE_COLUMN, last_active,
 			   DICT_MEMBER_COLUMN, binfo,
 			   DICT_EDITABLE_COLUMN, FALSE,
+			   DICT_AVAILABLE_COLUMN, TRUE,
 			   DICT_FGCOLOR_COLUMN, fg,
 			   DICT_BGCOLOR_COLUMN, bg,
 			   -1);
@@ -1294,6 +1312,20 @@ GtkWidget *pref_start_dictgroup()
 						     "text", DICT_TITLE_COLUMN,
 						     "editable", DICT_EDITABLE_COLUMN,
 						     NULL);
+
+	/* Grey out entries that are in the configuration but could not be
+	 * opened, so that a vanished dictionary is visibly "unavailable"
+	 * instead of silently disappearing from the list.  Binding the
+	 * "sensitive" property (rather than installing a cell data function)
+	 * leaves the "text"/"editable" bindings above untouched. */
+	{
+		GtkTreeViewColumn *name_column =
+			gtk_tree_view_get_column(GTK_TREE_VIEW(dict_view), 0);
+		if(name_column != NULL)
+			gtk_tree_view_column_add_attribute(name_column, renderer,
+							   "sensitive",
+							   DICT_AVAILABLE_COLUMN);
+	}
 
 /*
 	renderer = gtk_cell_renderer_text_new();

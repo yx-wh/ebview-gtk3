@@ -391,6 +391,52 @@ static gboolean lookup_startup_word(gpointer data)
 	return(FALSE);
 }
 
+/* Told once the dictionary groups have been read, after the main loop is
+ * running -- a dialog created before gtk_main() would block start-up, which
+ * is exactly why log.c suppresses popups while bstarting_up is TRUE. */
+static gboolean show_unavailable_dicts(gpointer data)
+{
+	gint count;
+	gchar *names;
+	gchar *message;
+
+	(void)data;
+
+	count = dictgroup_unavailable_count();
+	if(count <= 0)
+		return(FALSE);
+
+	names = dictgroup_unavailable_summary();
+
+	if(count == 1){
+		message = g_strdup_printf(
+			_("A dictionary in the dictionary groups could not be "
+			  "opened and is kept in the list, greyed out, so that "
+			  "your settings are not lost.\n\n"
+			  "The dictionary may have been moved or deleted, or the "
+			  "drive or network share it lives on may not be mounted "
+			  "at the moment.%s"), names);
+	} else {
+		message = g_strdup_printf(
+			_("%d dictionaries in the dictionary groups could not be "
+			  "opened and are kept in the list, greyed out, so that "
+			  "your settings are not lost.\n\n"
+			  "They may have been moved or deleted, or the drive or "
+			  "network share they live on may not be mounted at the "
+			  "moment.%s"), count, names);
+	}
+
+	/* Do not LOG() this at WARNING level: log.c turns every message at or
+	 * above LOG_MESSAGE into its own popup, which would double up with the
+	 * one below.  Each failing book already logged its own CRITICAL line. */
+	popup_warning(message);
+
+	g_free(message);
+	g_free(names);
+
+	return(FALSE);
+}
+
 int main( int   argc,
 	  char *argv[] )
 {
@@ -589,6 +635,12 @@ int main( int   argc,
 
 	// main loop
 	bstarting_up = FALSE;
+
+	/* Entries that stayed in dictgroup.xml but could not be opened: warn
+	 * once, from inside the main loop. */
+	if(dictgroup_unavailable_count() > 0)
+		g_idle_add(show_unavailable_dicts, NULL);
+
 	gtk_main ();
 	ebook_end();
 
