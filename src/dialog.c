@@ -55,6 +55,16 @@ void center_dialog(GtkWidget *window, GtkWidget *dialog){
 	
 }
 
+static void dialog_response(GtkWidget *dialog, gint response, gpointer data)
+{
+	gtk_widget_destroy(dialog);
+}
+
+static void dialog_destroyed(GtkWidget *dialog, gpointer data)
+{
+	active = FALSE;
+}
+
 gboolean idle_warning(gpointer data){
 	GtkWidget *dialog;
 	GtkWidget *parent;
@@ -76,9 +86,15 @@ gboolean idle_warning(gpointer data){
 					GTK_MESSAGE_WARNING,
 					GTK_BUTTONS_OK,
 					g_message);
-	gtk_dialog_run(GTK_DIALOG(dialog));
-	gtk_widget_destroy(dialog);
-	active  = FALSE;
+	/* Shown non-modally on purpose: gtk_dialog_run() starts a nested main
+	 * loop, and if anything else holds a GTK grab (the search progress
+	 * dialog does) that loop never receives input and the whole UI looks
+	 * frozen until killed.  Close still works normally. */
+	g_signal_connect(G_OBJECT(dialog), "response",
+			 G_CALLBACK(dialog_response), NULL);
+	g_signal_connect(G_OBJECT(dialog), "destroy",
+			 G_CALLBACK(dialog_destroyed), NULL);
+	gtk_widget_show(dialog);
 
  END:
 	LOG(LOG_DEBUG, "OUT : idle_warning");
@@ -107,9 +123,15 @@ gboolean idle_error(gpointer data){
 					GTK_BUTTONS_CLOSE,
 					g_message);
 					
-	gtk_dialog_run(GTK_DIALOG(dialog));
-	gtk_widget_destroy(dialog);
-	active  = FALSE;
+	/* Shown non-modally on purpose: gtk_dialog_run() starts a nested main
+	 * loop, and if anything else holds a GTK grab (the search progress
+	 * dialog does) that loop never receives input and the whole UI looks
+	 * frozen until killed.  Close still works normally. */
+	g_signal_connect(G_OBJECT(dialog), "response",
+			 G_CALLBACK(dialog_response), NULL);
+	g_signal_connect(G_OBJECT(dialog), "destroy",
+			 G_CALLBACK(dialog_destroyed), NULL);
+	gtk_widget_show(dialog);
 
  END:
 	LOG(LOG_DEBUG, "OUT : idle_error");
@@ -120,8 +142,11 @@ void popup_warning(char *message){
 
 	LOG(LOG_DEBUG, "IN : popup_warning");
 
-	g_idle_add(idle_warning, (gpointer)message);
-	strcpy(g_message, message);
+	strncpy(g_message, message, sizeof(g_message) - 1);
+	g_message[sizeof(g_message) - 1] = '\0';
+	/* Errors can be logged from a draw callback. Running a modal dialog
+	 * synchronously there re-enters GTK and may crash; defer it instead. */
+	g_idle_add(idle_warning, NULL);
 
 	LOG(LOG_DEBUG, "OUT : popup_warning");
 }
@@ -130,9 +155,10 @@ void popup_error(char *message){
 
 	LOG(LOG_DEBUG, "IN : popup_error");
 
-	strcpy(g_message, message);
-
-	g_idle_add(idle_error, (gpointer)message);
+	strncpy(g_message, message, sizeof(g_message) - 1);
+	g_message[sizeof(g_message) - 1] = '\0';
+	/* See popup_warning(): never open a modal dialog from a draw callback. */
+	g_idle_add(idle_error, NULL);
 
 	LOG(LOG_DEBUG, "OUT : popup_error");
 }
