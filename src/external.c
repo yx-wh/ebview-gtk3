@@ -18,6 +18,7 @@
 #include "defs.h"
 #include "global.h"
 #include "eb.h"
+#include "dialog.h"
 #include <pthread.h>
 
 #ifndef __WIN32__
@@ -25,6 +26,18 @@
 #endif
 
 #define USE_EXEC 1
+
+#ifndef __WIN32__
+/* Reap async external commands from the GTK main loop.  A SIGCHLD
+ * handler that called popup_warning() was not async-signal-safe and
+ * could also steal the exit status of waitpid()/system(). */
+static void child_exit_cb(GPid pid, gint status, gpointer data)
+{
+	(void)pid; (void)data;
+	if(WIFEXITED(status) && (WEXITSTATUS(status) == 100))
+		popup_warning(_("Failed to execute command. Please check setting."));
+}
+#endif
 
 gint launch_external(gchar *cmd, gboolean wait){
 
@@ -77,12 +90,21 @@ gint launch_external(gchar *cmd, gboolean wait){
 		break;
 	default:
 		if(wait == TRUE) {
-			waitpid(pid, &status, 0);
-			LOG(LOG_DEBUG, "Child exited with status %d\n", WEXITSTATUS(status));
-			if(WIFEXITED(status) == 0){
-				LOG(LOG_WARNING, "Child exited abnormally with status %d\n", WEXITSTATUS(status));
-				return(WEXITSTATUS(status));
+			if(waitpid(pid, &status, 0) == -1){
+				LOG(LOG_WARNING, "waitpid : %s", strerror(errno));
+				return(0);
 			}
+			if(WIFEXITED(status)){
+				LOG(LOG_DEBUG, "Child exited with status %d\n", WEXITSTATUS(status));
+				if(WEXITSTATUS(status) == 100)
+					popup_warning(_("Failed to execute command. Please check setting."));
+			} else {
+				LOG(LOG_WARNING, "Child exited abnormally (status %d)\n", status);
+			}
+		} else {
+			/* Reap asynchronously in the main loop.  Doing this from a
+			 * SIGCHLD handler and showing a dialog there is unsafe. */
+			g_child_watch_add(pid, child_exit_cb, NULL);
 		}
 	}
 	return(0);

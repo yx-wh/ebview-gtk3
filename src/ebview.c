@@ -108,17 +108,7 @@ void exit_program( GtkWidget *widget,
 }
 
 static void sig_handler(int sig){
-	gint status;
-
 	switch(sig){
-#ifndef __WIN32__
-	case SIGCHLD:
-		wait(&status);
-		if(WEXITSTATUS(status) == 100){
-			popup_warning(_("Failed to execute command. Please check setting."));
-		}
-		break;
-#endif
 	case SIGTERM:
 	case SIGINT:
 		/* GTK/GLib/pthread calls are not async-signal-safe. Calling
@@ -197,7 +187,7 @@ static void *server_thread(void *arg)
 //	signal(SIGINT, SIG_DFL);
 	signal(SIGTERM, SIG_DFL);
 #ifndef __WIN32__
-	signal(SIGCHLD, SIG_DFL);
+	/* Do not reset SIGCHLD: GLib's g_child_watch_add() owns it. */
 	signal(SIGPIPE, SIG_DFL);
 #endif
 
@@ -347,7 +337,8 @@ int main( int   argc,
 	signal(SIGINT, sig_handler);
 	signal(SIGTERM, sig_handler);
 #ifndef __WIN32__
-	signal(SIGCHLD, sig_handler);
+	/* SIGCHLD is handled by GLib's g_child_watch_add() (external.c);
+	 * overriding it here would break child reaping. */
 	signal(SIGPIPE, sig_handler);
 #endif
 
