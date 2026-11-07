@@ -39,6 +39,7 @@ GtkWidget *combo_group;
  * size-allocate handler so the buttons re-flow when the window is resized. */
 static gint dict_bar_available_width = 0;
 static gboolean dict_bar_size_connected = FALSE;
+static gboolean rebuild_scheduled = FALSE;
 
 /* GtkComboBoxText's drop-down button is barely wider than its arrow by
  * default.  Locate it through the public container API and make it a
@@ -299,6 +300,18 @@ static void update_dict_button()
 
 }
 
+/* Rebuilding widgets from a size-allocate handler leaves the new rows with
+ * a 1px height: the parent is in the middle of its own allocation and the
+ * freshly created children never take part in it.  Defer to an idle
+ * callback, which runs with a clean allocation state. */
+static gboolean rebuild_dict_buttons(gpointer data)
+{
+	(void)data;
+	rebuild_scheduled = FALSE;
+	update_dict_button();
+	return(FALSE);
+}
+
 /* Re-flow the buttons whenever the window width changes.  The width comes
  * from the parent, so rebuilding rows cannot change it again; the guard
  * below also prevents a size-allocate feedback loop. */
@@ -319,8 +332,10 @@ static void dict_bar_size_allocate(GtkWidget *widget, GtkAllocation *allocation,
 		return;
 
 	dict_bar_available_width = available;
-	if(dict_box != NULL)
-		update_dict_button();
+	if((dict_box != NULL) && !rebuild_scheduled){
+		rebuild_scheduled = TRUE;
+		g_idle_add(rebuild_dict_buttons, NULL);
+	}
 }
 
 static gint group_changed (GtkWidget *combo){
@@ -518,6 +533,15 @@ if(active_found == TRUE){
 	}
 
 	gtk_widget_show_all(dict_bar);
+
+	/* Rebuild once more after the first allocation.  Creating the buttons
+	 * inside a size-allocate handler leaves their rows with a 1px height
+	 * (the children are added while the parent is mid-allocation), so the
+	 * first layout always goes through the idle path below. */
+	if(!rebuild_scheduled){
+		rebuild_scheduled = TRUE;
+		g_idle_add(rebuild_dict_buttons, NULL);
+	}
 
 	LOG(LOG_DEBUG, "OUT : create_dict_bar()");
 
