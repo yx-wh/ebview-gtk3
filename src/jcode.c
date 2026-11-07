@@ -150,7 +150,7 @@ gchar *iconv_convert(const gchar *icode, const gchar *ocode, const gchar *orig){
 	inbuf = (guchar *)orig;
 		
 	origsize = isize = strlen((char *)inbuf);
-	osize = buflen = isize * 2;
+	osize = buflen = isize * 4 + 64;
 	result = outbuf = malloc(osize);
 	memset(result, 0x00, osize);
 
@@ -177,7 +177,24 @@ gchar *iconv_convert(const gchar *icode, const gchar *ocode, const gchar *orig){
 		// Replace undefined characters
 		if((r == -1) && (errno == EILSEQ)) {
 			LOG(LOG_INFO, "Couldn't convert %02x %02x. Skipped.", (guchar)(*inbuf), (guchar)(*(inbuf+1)));
-			replace_char((const guchar *)icode, (const guchar *)ocode, &inbuf, &outbuf, (gint *)&isize, (gint *)&osize);
+			if(strcasecmp(icode, "utf-8") == 0){
+				/* replace_char() assumes 2-byte EUC-JP/SJIS input; skipping
+				 * 2 bytes of a 3/4-byte UTF-8 sequence corrupts the stream
+				 * and can underflow isize.  Drop one whole character. */
+				const gchar *next;
+				size_t skip;
+
+				next = g_utf8_next_char((const gchar *)inbuf);
+				skip = (size_t)(next - (const gchar *)inbuf);
+				if(skip > isize)
+					skip = isize;
+				inbuf += skip;
+				isize -= skip;
+			} else if((isize >= 2) && (osize >= 16)){
+				replace_char((const guchar *)icode, (const guchar *)ocode, &inbuf, &outbuf, (gint *)&isize, (gint *)&osize);
+			} else {
+				break;
+			}
 			continue;
 		}
 		break;
@@ -197,7 +214,7 @@ gchar *iconv_convert(const gchar *icode, const gchar *ocode, const gchar *orig){
 				break;
 			LOG(LOG_INFO, "[%02x](%c) ", (unsigned char)inbuf[i], (unsigned char)inbuf[i]);
 		}
-		LOG(LOG_CRITICAL, "iconv : %s", strerror(errno));
+		LOG(LOG_INFO, "iconv : %s", strerror(errno));
 		result[0] = '\0';
 
 		LOG(LOG_DEBUG, "OUT : iconv_convert() OUT4");
@@ -237,7 +254,7 @@ gchar *iconv_convert2(const gchar *icode, const gchar *ocode, const gchar *orig)
 	inbuf = (gchar *)orig;
 		
 	isize = strlen(inbuf);
-	osize = buflen = isize * 2;
+	osize = buflen = isize * 4 + 64;
 	result = outbuf = malloc(osize);
 	memset(result, 0x00, osize);
 
@@ -249,6 +266,8 @@ gchar *iconv_convert2(const gchar *icode, const gchar *ocode, const gchar *orig)
 #endif
 		if((r == -1) && (errno == EILSEQ)){
 			LOG(LOG_INFO, "Couldn't convert %02x %02x. Skipped.", (guchar)(*inbuf), (guchar)(*(inbuf+1)));
+			if((isize < 2) || (osize < 2))
+				break;
 			*outbuf = 0x20;
 			outbuf ++;
 			*outbuf = 0x20;
@@ -266,7 +285,7 @@ gchar *iconv_convert2(const gchar *icode, const gchar *ocode, const gchar *orig)
 	iconv_close(cd);
 
 	if(r != 0){
-		LOG(LOG_CRITICAL, "iconv : %s", strerror(errno));
+		LOG(LOG_INFO, "iconv : %s", strerror(errno));
 		result[0] = '\0';
 		return(result);
 	}
