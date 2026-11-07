@@ -134,7 +134,7 @@ GdkPixbuf *load_xbm(BOOK_INFO *binfo, gchar *name, gint *w, gint *h, gchar *colo
 
 		data = read_gaiji_as_xpm(binfo, name, size, &width, &height, color);
 		if(data == NULL){
-			LOG(LOG_CRITICAL, "failed to read gaiji : %s", name);
+			LOG(LOG_INFO, "failed to read gaiji : %s", name);
 			return(NULL);
 		}
 		pixbuf = gdk_pixbuf_new_from_xpm_data((const char **)data);
@@ -421,6 +421,12 @@ static void draw_gaiji(CANVAS *canvas, BOOK_INFO *binfo, TAG *tag, gchar *code)
 
 	pixbuf = load_xbm(binfo, code, &width, &height, color);
 
+	if(pixbuf == NULL){
+		/* The dictionary may not have the requested gaiji font at all.
+		 * Skip it instead of passing NULL to GTK, which used to crash. */
+		return;
+	}
+
 	gtk_text_buffer_insert_pixbuf(
 			canvas->buffer, canvas->iter,
 			pixbuf);
@@ -506,7 +512,7 @@ static void draw_graphic(CANVAS *canvas, BOOK_INFO *binfo, gint type, gint page,
 
 	pixbuf = gdk_pixbuf_new_from_file(filename, NULL);
 	if(pixbuf == NULL){
-		LOG(LOG_CRITICAL, "Failed to load image file : %s", filename);
+		LOG(LOG_INFO, "Failed to load image file : %s", filename);
 		goto END;
 	}
 
