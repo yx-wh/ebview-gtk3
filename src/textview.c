@@ -84,6 +84,30 @@ static void search_selection()
 	LOG(LOG_DEBUG, "OUT : search_selection()");
 }
 
+// Called from the toplevel key_press_event handler before it steals the
+// focus: if Enter is pressed while the text view holds a selection,
+// search the selected text.
+gboolean main_view_enter_searches(GdkEventKey *event)
+{
+	GtkTextIter start;
+	GtkTextIter end;
+
+	if(event->keyval == GDK_KEY_Return ||
+	   event->keyval == GDK_KEY_KP_Enter ||
+	   event->keyval == GDK_KEY_ISO_Enter){
+		if(!(event->state & (GDK_SHIFT_MASK |
+				     GDK_CONTROL_MASK |
+				     GDK_MOD1_MASK)) &&
+		   gtk_text_buffer_get_selection_bounds(text_buffer,
+							&start, &end)){
+			search_selection();
+			return(TRUE);
+		}
+	}
+
+	return(FALSE);
+}
+
 void copy_to_clipboard()
 {
 	gtk_text_buffer_copy_clipboard(text_buffer, gtk_clipboard_get(NULL));
