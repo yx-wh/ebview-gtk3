@@ -227,8 +227,25 @@ void thread_end()
 	pthread_mutex_unlock(&mutex);
 }
 
-void set_cancel_dlg_text(gchar *text)
+/* Called from the search worker; GTK labels must be updated on the main
+ * loop just like the message buffer. */
+static gboolean set_cancel_dlg_text_idle(gpointer data)
 {
+	gchar *text = data;
+
 	if(label_cancel != NULL)
 		gtk_label_set_text(GTK_LABEL(label_cancel), text);
+	g_free(text);
+	return(FALSE);
+}
+
+void set_cancel_dlg_text(gchar *text)
+{
+	if(label_cancel == NULL)
+		return;
+	if(!g_main_context_is_owner(g_main_context_default())){
+		g_idle_add(set_cancel_dlg_text_idle, g_strdup(text));
+		return;
+	}
+	gtk_label_set_text(GTK_LABEL(label_cancel), text);
 }
