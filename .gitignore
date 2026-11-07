@@ -52,3 +52,9 @@ po/cat-id-tbl.c
 po/ebview.pot
 po/ja.gmo
 po/ja.po.utf-8
+
+# Windows build & agent artifacts
+.workbuddy/
+src/ebview.exe
+util/ebdump.exe
+po/stamp-cat-id
