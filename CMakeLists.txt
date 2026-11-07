@@ -213,6 +213,16 @@ if(MSGFMT_EXECUTABLE)
 endif()
 
 install(TARGETS ebview ebdump RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+
+# ebview-format — a Python wrapper that pretty-prints the raw EB streaming
+# output of `ebview --exact-terminal` (ANSI colors / bold, gaiji placeholders,
+# wrap by display width).  It is interpreted, so we just install it executable.
+install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/tools/ebview-format"
+    DESTINATION "${CMAKE_INSTALL_BINDIR}"
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
+                GROUP_READ GROUP_EXECUTE
+                WORLD_READ WORLD_EXECUTE)
+
 install(FILES
     "${CMAKE_CURRENT_BINARY_DIR}/data/about.en"
     "${CMAKE_CURRENT_BINARY_DIR}/data/about.jp"
