@@ -874,11 +874,18 @@ GtkWidget *create_dict_window()
 	gtk_box_pack_start(GTK_BOX(hbox), label, FALSE, FALSE, 5);
 
 
-	combo_word = gtk_entry_new();
-	word_entry = combo_word;
+	/* GTK2 used a GtkCombo here, whose drop-down listed the search
+	 * history.  GtkComboBoxText with an entry is the direct equivalent. */
+	combo_word = gtk_combo_box_text_new_with_entry();
+	word_entry = gtk_bin_get_child(GTK_BIN(combo_word));
 	gtk_box_pack_start(GTK_BOX(hbox), combo_word, TRUE, TRUE, 0);
-	// gtk_combo_disable_activate(GTK_COMBO(combo_word));
-	// gtk_combo_set_case_sensitive(GTK_COMBO(combo_word), TRUE);
+	if(word_history != NULL){
+		GList *l;
+		for(l = word_history; l != NULL; l = l->next)
+			gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(combo_word),
+						       (char *)l->data);
+	}
+	gtk_entry_set_text(GTK_ENTRY(word_entry), "");
 
 	g_signal_connect(G_OBJECT(word_entry),"activate",
 			 G_CALLBACK(entry_activate_event), NULL);

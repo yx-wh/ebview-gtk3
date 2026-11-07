@@ -544,6 +544,10 @@ GtkWidget *create_main_view()
 		item = gtk_menu_item_new_with_label(_("Tree Frame Tab"));
 		g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(show_tree_tab), NULL);
 		gtk_menu_shell_append(GTK_MENU_SHELL(submenu), item);
+
+		/* Menu items are hidden by default; without this the popup has
+		 * no visible content and collapses to a 1px strip. */
+		gtk_widget_show_all(text_menu);
 	}
 
 

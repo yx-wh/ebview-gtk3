@@ -160,7 +160,18 @@ void save_word_history(const gchar *word){
 		word_history = g_list_prepend(word_history, g_strdup(word));	
 	}
 
-	// gtk_combo_set_popdown_strings(GTK_COMBO(combo_word), word_history);
+	/* Keep the search-history drop-down in sync without a restart. */
+	if(combo_word != NULL){
+		GtkWidget *entry = gtk_bin_get_child(GTK_BIN(combo_word));
+		GList *l;
+
+		gtk_combo_box_text_remove_all(GTK_COMBO_BOX_TEXT(combo_word));
+		for(l = word_history; l != NULL; l = l->next)
+			gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(combo_word),
+						       (char *)l->data);
+		if(entry != NULL)
+			gtk_entry_set_text(GTK_ENTRY(entry), word);
+	}
 
 	save_history();
 

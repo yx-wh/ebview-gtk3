@@ -307,6 +307,8 @@ GtkWidget *create_web_tree()
 		item = gtk_menu_item_new_with_label(_("Search"));
 		g_signal_connect(G_OBJECT(item), "activate", G_CALLBACK(web_search), NULL);
 		gtk_menu_shell_append(GTK_MENU_SHELL(tree_menu), item);
+
+		gtk_widget_show_all(tree_menu);
 	}
 	LOG(LOG_DEBUG, "OUT : create_web_tree()");
 
