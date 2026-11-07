@@ -106,7 +106,12 @@ void start_search(){
 		euc_str = iconv_convert("utf-8", "euc-jp", word);
 	remove_space(euc_str);
 	if(strlen(euc_str) == 0){
-		popup_warning(_("Please enter search word."));
+		/* A non-empty word can convert to nothing when it contains
+		 * characters outside JIS X 0208 (simplified Chinese, emoji). */
+		if((method != SEARCH_METHOD_GREP) && (word != NULL) && (*word != '\0'))
+			popup_warning(_("This search method supports Japanese/English text only."));
+		else
+			popup_warning(_("Please enter search word."));
 		g_free(euc_str);
 		return;
 	}
@@ -477,8 +482,6 @@ void go_down(){
 	LOG(LOG_DEBUG, "OUT : go_down()");
 }
 
-extern gboolean bshowing_result;
-
 void note_switch_page(GtkNotebook *notebook, GtkWidget *page, gint page_num, gpointer data)
 {
 	(void)notebook; (void)page; (void)data;
@@ -496,9 +499,9 @@ void note_switch_page(GtkNotebook *notebook, GtkWidget *page, gint page_num, gpo
 			eb_web = 0;
 			gtk_notebook_set_current_page(GTK_NOTEBOOK(note_text), 0);
 
-			if(!bshowing_result && active_id &&
-			   strcmp(active_id, _("Internet Search")) == 0)
-				gtk_combo_box_set_active_id(GTK_COMBO_BOX(combo_method), _("Automatic Search"));
+			/* This page only displays results; switching to it must not
+			 * rewrite the search method.  Doing so used to turn File
+			 * Search results into dictionary hits. */
 			break;
 
 		case 1:
@@ -1255,7 +1258,7 @@ void select_fulltext_search()
 {
 	LOG(LOG_DEBUG, "IN : select_fulltext_search()");
 
-	gtk_combo_box_set_active_id(GTK_COMBO_BOX(combo_method), _("Fulltext Search"));
+	gtk_combo_box_set_active_id(GTK_COMBO_BOX(combo_method), _("Full Text Search"));
 	gtk_notebook_set_current_page(GTK_NOTEBOOK(note_tree), 0);
 
 	change_search_menu(SEARCH_METHOD_FULL_TEXT);
