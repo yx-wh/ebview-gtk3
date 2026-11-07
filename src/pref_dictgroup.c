@@ -31,7 +31,7 @@ static GtkWidget *entry_group_name;
 static GtkWidget *entry_directory_name;
 static GtkWidget *spin_search_depth;
 static GtkWidget *entry_title;
-static GtkWidget *entry_book_path;
+static GtkWidget *label_book_path;
 static GtkWidget *entry_appendix_path;
 static GtkWidget *entry_subbook_no;
 static GtkWidget *entry_appendix_subbook_no;
@@ -905,7 +905,7 @@ static gboolean update_last_dictionary()
 		goto FAILED;
 	}
 
-	book_path = (gchar *)gtk_entry_get_text(GTK_ENTRY(entry_book_path));
+	book_path = (gchar *)gtk_label_get_text(GTK_LABEL(label_book_path));
 	if(!book_path || (strlen(book_path) == 0)) {
 		popup_error(_("Please specify book path."));
 		goto FAILED;
@@ -1044,9 +1044,9 @@ static void dict_selection_changed(GtkTreeSelection *selection, gpointer data)
 		gtk_entry_set_text(GTK_ENTRY(entry_title), "");
 
 	if(book_path != NULL)
-		gtk_entry_set_text(GTK_ENTRY(entry_book_path), book_path);
+		gtk_label_set_text(GTK_LABEL(label_book_path), book_path);
 	else
-		gtk_entry_set_text(GTK_ENTRY(entry_book_path), "");
+		gtk_label_set_text(GTK_LABEL(label_book_path), "");
 
 	if(appendix_path != NULL)
 		gtk_entry_set_text(GTK_ENTRY(entry_appendix_path), appendix_path);
@@ -1438,8 +1438,9 @@ GtkWidget *pref_start_dictgroup()
 			   label,FALSE, FALSE, 2);
 
 	entry_directory_name = gtk_entry_new();
+	gtk_entry_set_width_chars(GTK_ENTRY(entry_directory_name), 28);
 	gtk_box_pack_start(GTK_BOX(hbox2),
-			   entry_directory_name, FALSE, FALSE, 2);
+			   entry_directory_name, TRUE, TRUE, 2);
 	g_signal_connect(G_OBJECT (entry_directory_name), "activate",
 			 G_CALLBACK(search_disk), (gpointer)NULL);
 
@@ -1470,6 +1471,9 @@ GtkWidget *pref_start_dictgroup()
 	// 右半分
 
 	frame = gtk_frame_new(NULL);
+	/* Keep the right-hand details pane wide enough for dictionary paths;
+	 * the tree on the left keeps the remaining (expandable) space. */
+	gtk_widget_set_size_request(frame, 320, -1);
 	gtk_box_pack_start (GTK_BOX(hbox)
 			    , frame,TRUE, TRUE, 0);
 	
@@ -1490,11 +1494,21 @@ GtkWidget *pref_start_dictgroup()
 	gtk_box_pack_start (GTK_BOX(vbox_r), label,
 			    FALSE, FALSE, 0);
 
-	entry_book_path = gtk_entry_new();
-	gtk_editable_set_editable(GTK_EDITABLE(entry_book_path), FALSE);
-	gtk_box_pack_start (GTK_BOX(vbox_r), entry_book_path,
+	/* Read-only display. A GtkEntry truncated long dictionary paths;
+	 * a wrapping, selectable label shows the whole path and allows copy. */
+	label_book_path = gtk_label_new(NULL);
+	gtk_label_set_line_wrap(GTK_LABEL(label_book_path), TRUE);
+	/* Paths contain no spaces, so WORD wrap alone would not break them. */
+	gtk_label_set_line_wrap_mode(GTK_LABEL(label_book_path),
+				    PANGO_WRAP_WORD_CHAR);
+	gtk_label_set_selectable(GTK_LABEL(label_book_path), TRUE);
+	gtk_widget_set_halign(label_book_path, GTK_ALIGN_START);
+	gtk_widget_set_valign(label_book_path, GTK_ALIGN_START);
+	/* A bare wrapping GtkLabel may under-negotiate its height in a box
+	 * and clip middle lines; give it an explicit minimum box. */
+	gtk_widget_set_size_request(label_book_path, 300, 80);
+	gtk_box_pack_start (GTK_BOX(vbox_r), label_book_path,
 			    FALSE, FALSE, 0);
-	gtk_widget_set_sensitive(entry_book_path, FALSE);
 
 	label = gtk_label_new(_("Subbook Number"));
 	gtk_box_pack_start (GTK_BOX(vbox_r), label,
@@ -1511,6 +1525,7 @@ GtkWidget *pref_start_dictgroup()
 			    FALSE, FALSE, 0);
 
 	entry_appendix_path = gtk_entry_new();
+	gtk_entry_set_width_chars(GTK_ENTRY(entry_appendix_path), 28);
 	gtk_box_pack_start (GTK_BOX(vbox_r), entry_appendix_path,
 			    FALSE, FALSE, 0);
 
