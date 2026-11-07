@@ -310,8 +310,9 @@ them,  and if you click the left mouse button, you can play sound or movie.<br>
 <br>
 EBView uses external program to play multimedia, so you need to specify programs
 which are capable to play actual data. Open [Settings]-&gt;[External Program]
-and enter the name of external program. For example, "playwave %f" for sound.
-%f is mandatory.  Prior to lanuch external program, EBView will store multimedia
+and enter the name of external program. For example, "xdg-open %f" lets the
+desktop's preferred application handle the file. %f is mandatory.  Prior to
+lanuch external program, EBView will store multimedia
 data to temporally file. %f will be replaced by temporally file internally.
 <br>
 <br>
@@ -329,8 +330,8 @@ on search engine name will popup menus.  You can jump to Homepage from here.
 You may need this when you want to specify detailed optional parameter.<br>
 <br>
 If nothing happens, please check command to launch browser.  [Settings]-&gt;[External
-Program] has an entry. Example is "gnome-moz-remote %f". %f is mandatory and
-will be replaced by URL.<br>
+Program] has an entry. Example is "xdg-open %f", which opens the URL in the
+default browser. %f is mandatory and will be replaced by URL.<br>
 <br>
 You can customize the list of search engine in [Settings]-&gt;[Search Engines].
 Final URL will be the conjunction of "Pre string" and keyword and "Post string".
