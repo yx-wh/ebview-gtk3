@@ -27,7 +27,7 @@
 
 static pthread_t tid;
 static gint tag_timeout;
-static gint thread_running = 0;
+gint thread_running = 0;
 static gint hit_count=0;
 static gfloat search_progress;
 static pthread_mutex_t mutex;

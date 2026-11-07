@@ -24,6 +24,9 @@
 #include "dialog.h"
 #include "log.h"
 
+extern gint bstarting_up;
+extern gint thread_running;
+
 #define STDERR stderr
 
 
@@ -69,9 +72,31 @@ void log_func(const gchar *file, gint line, LOG_LEVEL level, const gchar *messag
 		g_printf("%s:%d %s : %s\n", file, line, prefix, str);
 	}
 
-	// Show dialog box.
-#if 0
-	if(level <= LOG_MESSAGE){
+	// Show dialog box. During start-up the main window does not exist yet,
+	// so a modal dialog here would block (or crash) before gtk_main().
+	// A broken dictionary can emit thousands of errors while rendering;
+	// show each source location at most once and cap the total, so modal
+	// dialogs can never monopolise the main loop and hang the UI.
+	/* The search progress dialog owns a GTK grab; a modal dialog opened
+	 * during a search would never receive input and freeze the UI. */
+	if(level <= LOG_MESSAGE && !bstarting_up && !thread_running){
+		static GHashTable *popup_seen = NULL;
+		static guint popup_count = 0;
+		const guint MAX_ERROR_POPUPS = 5;
+		gchar *key;
+
+		if(popup_seen == NULL)
+			popup_seen = g_hash_table_new_full(g_str_hash, g_str_equal,
+							   g_free, NULL);
+		key = g_strdup_printf("%s:%d", file, line);
+		if(g_hash_table_contains(popup_seen, key) ||
+		   popup_count >= MAX_ERROR_POPUPS){
+			g_free(key);
+			return;
+		}
+		g_hash_table_add(popup_seen, key);
+		popup_count++;
+
 		switch(level){
 		case LOG_ERROR:
 		case LOG_CRITICAL:
@@ -85,5 +110,4 @@ void log_func(const gchar *file, gint line, LOG_LEVEL level, const gchar *messag
 			break;
 		}
 	}
-#endif
 }
