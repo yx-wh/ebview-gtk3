@@ -18,6 +18,7 @@
 
 #include "defs.h"
 #include "global.h"
+#include <direct.h>
 
 
 void beep(){

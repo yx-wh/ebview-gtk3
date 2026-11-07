@@ -42,7 +42,7 @@ void bring_to_top(GtkWidget *win){
 	int nTargetID, nForegroundID;
 	BOOL res;
 
-	hWnd = GDK_WINDOW_HWND (win->window);
+	hWnd = GDK_WINDOW_HWND (gtk_widget_get_window(win));
 
 	/* From  http://techtips.belution.com/ja/vc/0012/ */
 	nForegroundID = GetWindowThreadProcessId(GetForegroundWindow(), NULL);
@@ -364,9 +364,9 @@ void auto_lookup_start()
 #ifdef __WIN32__
 	if(registered == FALSE) {
 		if(OrgWndProc == NULL){
-			hidden_hwnd = GDK_WINDOW_HWND (hidden_window->window);
-			OrgWndProc = (WNDPROC)GetWindowLong(hidden_hwnd, GWL_WNDPROC);
-			SetWindowLong(hidden_hwnd, GWL_WNDPROC, (LONG)HiddenWndProc);
+			hidden_hwnd = GDK_WINDOW_HWND (gtk_widget_get_window(hidden_window));
+			OrgWndProc = (WNDPROC)GetWindowLongPtr(hidden_hwnd, GWLP_WNDPROC);
+			SetWindowLongPtr(hidden_hwnd, GWLP_WNDPROC, (LONG_PTR)HiddenWndProc);
 		}
 		next_hwnd = SetClipboardViewer(hidden_hwnd);
 	}
@@ -386,7 +386,7 @@ void auto_lookup_stop()
 
 #ifdef __WIN32__
 	if(registered == TRUE) {
-		hidden_hwnd = GDK_WINDOW_HWND (hidden_window->window);
+		hidden_hwnd = GDK_WINDOW_HWND (gtk_widget_get_window(hidden_window));
 		ChangeClipboardChain(hidden_hwnd, next_hwnd);
 		next_hwnd = NULL;
 		registered = FALSE;

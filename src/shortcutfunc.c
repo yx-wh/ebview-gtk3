@@ -350,7 +350,7 @@ void paste_from_clipboard()
 	LOG(LOG_DEBUG, "IN : paste_clipboard()");
 
 #ifdef __WIN32__    
-	hwnd = GDK_WINDOW_HWND (main_window->window);
+	hwnd = GDK_WINDOW_HWND (gtk_widget_get_window(main_window));
 	OpenClipboard(hwnd);
 	hText = GetClipboardData(CF_TEXT);
 	if(hText == NULL) {

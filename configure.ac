@@ -28,7 +28,36 @@ PKG_CHECK_MODULES(PANGOCAIRO, pangocairo, have_pangocairo="yes", have_pangocairo
 AC_SUBST(PANGOCAIRO_CFLAGS)
 AC_SUBST(PANGOCAIRO_LIBS)
 
-eb_LIB_EB4
+dnl EB Library (libeb) detection -- inlined so no external m4 macro is needed.
+dnl libeb needs zlib, ws2_32 (network) and iconv at link time on Windows/mingw.
+EBCONF_EBINCS=""
+EBCONF_EBLIBS="-leb -lz -lws2_32 -liconv"
+EBCONF_ZLIBINCS=""
+EBCONF_ZLIBLIBS="-lz"
+EBCONF_INTLINCS=""
+EBCONF_INTLLIBS="-lintl"
+EBCONF_PTHREAD_CPPFLAGS=""
+EBCONF_PTHREAD_CFLAGS=""
+EBCONF_PTHREAD_LDFLAGS=""
+AC_CHECK_HEADER([eb/eb.h], [eb_have_eb_h=yes], [eb_have_eb_h=no])
+AC_CHECK_LIB([eb], [eb_initialize_library],
+  [eb_have_eb_lib=yes], [eb_have_eb_lib=no],
+  [-lz -lws2_32 -liconv])
+if test "x$eb_have_eb_h" = "xyes" && test "x$eb_have_eb_lib" = "xyes"; then
+  AC_DEFINE([HAVE_EB], [1], [Define to 1 if you have the EB Library])
+  AC_DEFINE([HAVE_LIBEB], [1], [Define to 1 if you have libeb])
+else
+  AC_MSG_WARN([EB Library not found; ebview will not work correctly])
+fi
+AC_SUBST([EBCONF_EBINCS])
+AC_SUBST([EBCONF_EBLIBS])
+AC_SUBST([EBCONF_ZLIBINCS])
+AC_SUBST([EBCONF_ZLIBLIBS])
+AC_SUBST([EBCONF_INTLINCS])
+AC_SUBST([EBCONF_INTLLIBS])
+AC_SUBST([EBCONF_PTHREAD_CPPFLAGS])
+AC_SUBST([EBCONF_PTHREAD_CFLAGS])
+AC_SUBST([EBCONF_PTHREAD_LDFLAGS])
 
 dnl Checks for header files.
 AC_PATH_X

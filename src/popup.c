@@ -426,10 +426,10 @@ static void create_popup_window(){
 	gtk_widget_show_all(popup);
 
 #ifdef __WIN32__
-	hWnd = GDK_WINDOW_HWND(popup->window);
-	nStyle = GetWindowLong(hWnd, GWL_STYLE );
+	hWnd = GDK_WINDOW_HWND(gtk_widget_get_window(popup));
+	nStyle = GetWindowLongPtr(hWnd, GWL_STYLE );
 	nStyle &= ~WS_CAPTION;
-	SetWindowLong(hWnd, GWL_STYLE, nStyle );
+	SetWindowLongPtr(hWnd, GWL_STYLE, nStyle );
 	SetWindowPos(hWnd,
 		     HWND_TOPMOST,
 		     pos_x, pos_y,
