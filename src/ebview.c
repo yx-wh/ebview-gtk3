@@ -79,12 +79,17 @@ void exit_program( GtkWidget *widget,
 
 	ebook_end();
 
-	gdk_window_get_root_origin(gtk_widget_get_window(main_window), &window_x, &window_y);
-	window_width = gtk_widget_get_allocated_width(main_window);
-	window_height = gtk_widget_get_allocated_height(main_window);
+	/* main_window/note_tree only exist after create_main_window(); this
+	 * function can also be reached from a signal during start-up. */
+	if((main_window != NULL) && (note_tree != NULL) &&
+	   (gtk_widget_get_window(main_window) != NULL)){
+		gdk_window_get_root_origin(gtk_widget_get_window(main_window), &window_x, &window_y);
+		window_width = gtk_widget_get_allocated_width(main_window);
+		window_height = gtk_widget_get_allocated_height(main_window);
 
-	tree_width = gtk_widget_get_allocated_width(note_tree);
-	tree_height = gtk_widget_get_allocated_height(note_tree);
+		tree_width = gtk_widget_get_allocated_width(note_tree);
+		tree_height = gtk_widget_get_allocated_height(note_tree);
+	}
 
 	save_preference();
 	gtk_main_quit ();
@@ -116,8 +121,11 @@ static void sig_handler(int sig){
 #endif
 	case SIGTERM:
 	case SIGINT:
-		exit_program(NULL, NULL);
-		break;
+		/* GTK/GLib/pthread calls are not async-signal-safe. Calling
+		 * exit_program() here caused intermittent SIGSEGV on Ctrl+C /
+		 * SIGTERM. Normal quit (menu / window close) still goes through
+		 * exit_program() and saves preferences. */
+		_exit(128 + sig);
 	default:
 		break;
 	}

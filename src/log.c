@@ -70,6 +70,7 @@ void log_func(const gchar *file, gint line, LOG_LEVEL level, const gchar *messag
 		}
 
 		g_printf("%s:%d %s : %s\n", file, line, prefix, str);
+		fflush(stdout);
 	}
 
 	// Show dialog box. During start-up the main window does not exist yet,
