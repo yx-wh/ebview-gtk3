@@ -60,6 +60,7 @@ static pthread_t server_tid=(pthread_t)-1;
 static gint conn;
 static gchar sock_name[512];
 gchar *exe_path;
+gchar *locale_dir;
 
 extern GtkWidget *note_tree;
 
@@ -521,11 +522,7 @@ int main( int   argc,
 
 	initialize_preference();
 
-#ifdef __WIN32__
-	bindtextdomain(PACKAGE,package_dir);
-#else
-	bindtextdomain(PACKAGE,LOCALEDIR);
-#endif
+	bindtextdomain(PACKAGE, locale_dir);
 
 	bind_textdomain_codeset(PACKAGE, "UTF-8");
 	textdomain(PACKAGE);
