@@ -68,7 +68,6 @@ extern GList *word_history;
 
 static gint about_usage = 1;
 static gboolean style_set=FALSE;
-static gint eb_web=0;
 static gulong handler_method;
 static gulong handler_notebook;
 static gint note_page=0;
@@ -228,51 +227,137 @@ void toggle_popup(){
 }
 #endif
 
+/* Methods that replace the dictionary list in the left-hand pane. */
+static gboolean method_is_dictionary(gint method)
+{
+	switch(method){
+	case SEARCH_METHOD_MULTI:
+	case SEARCH_METHOD_INTERNET:
+	case SEARCH_METHOD_GREP:
+		return(FALSE);
+	default:
+		return(TRUE);
+	}
+}
+
+/* Display name of a method, as built by check_search_method(). */
+static const gchar *method_label(gint method)
+{
+	int i;
+
+	for(i=0 ; search_method[i].name != NULL ; i ++){
+		if(search_method[i].code == method)
+			return(search_method[i].name);
+	}
+	return(NULL);
+}
+
+/* Remember the last dictionary-style method so that leaving File Search or
+ * Internet Search restores what the user was using before. */
+static gint last_dictionary_method = SEARCH_METHOD_AUTOMATIC;
+
+/* Switch the left-hand notebook without note_switch_page() treating it as a
+ * method selection. */
+void set_tree_page(gint page)
+{
+	if(note_tree == NULL)
+		return;
+
+	if(handler_notebook != 0)
+		g_signal_handler_block(G_OBJECT(note_tree), handler_notebook);
+
+	note_page = page;
+	gtk_notebook_set_current_page(GTK_NOTEBOOK(note_tree), page);
+
+	if(handler_notebook != 0)
+		g_signal_handler_unblock(G_OBJECT(note_tree), handler_notebook);
+}
+
+/* Single entry point for changing the search method.  All views -- the
+ * method drop-down, the Search Method menu and the notebooks -- are updated
+ * from here, and none of them writes the state back. */
+void set_search_method(gint method)
+{
+	const gchar *label;
+	gint tree_page;
+
+	LOG(LOG_DEBUG, "IN : set_search_method(%d)", method);
+
+	ebook_set_search_method(method);
+
+	switch(method){
+	case SEARCH_METHOD_MULTI:    tree_page = 1; break;
+	case SEARCH_METHOD_INTERNET: tree_page = 2; break;
+	case SEARCH_METHOD_GREP:     tree_page = 3; break;
+	default:                     tree_page = 0; break;
+	}
+
+	if(method_is_dictionary(method))
+		last_dictionary_method = method;
+
+	/* Updating a view emits its own "changed"/"switch-page" signal.
+	 * Block those handlers while we do it, so a view cannot call back in
+	 * and either recurse or overwrite the method we just set. */
+	if((handler_method != 0) && (combo_method != NULL))
+		g_signal_handler_block(G_OBJECT(GTK_COMBO_BOX(combo_method)),
+				       handler_method);
+
+	set_tree_page(tree_page);
+
+	if(note_text != NULL)
+		gtk_notebook_set_current_page(GTK_NOTEBOOK(note_text),
+					      (method == SEARCH_METHOD_MULTI) ? 1 : 0);
+
+	/* File Search has its own search bar in place of the dictionary bar. */
+	if(note_bar != NULL)
+		gtk_notebook_set_current_page(GTK_NOTEBOOK(note_bar),
+					      (method == SEARCH_METHOD_GREP) ? 1 : 0);
+
+	label = method_label(method);
+	if(combo_method != NULL){
+		if((label != NULL) && method_is_dictionary(method))
+			gtk_combo_box_set_active_id(GTK_COMBO_BOX(combo_method), label);
+
+		/* Page-based methods have no dictionary search method to choose,
+		 * so hide the selector instead of showing a stale label. */
+		if(method_is_dictionary(method))
+			gtk_widget_show(combo_method);
+		else
+			gtk_widget_hide(combo_method);
+	}
+
+	if((handler_method != 0) && (combo_method != NULL))
+		g_signal_handler_unblock(G_OBJECT(GTK_COMBO_BOX(combo_method)),
+					 handler_method);
+
+	change_search_menu(method);
+
+	LOG(LOG_DEBUG, "OUT : set_search_method()");
+}
+
 static gint method_changed (GtkWidget *combo){
+	const gchar *text;
+	int i;
+
 	(void)combo;
-	gint method;
-	
+
 	// You cannot show menu and copyright here
 	// because they will be shown before you release the mouse button.
 	// Menu and copyright should be selected by main menu.
 
 	LOG(LOG_DEBUG, "IN : method_changed()");
 
-	g_signal_handler_block(G_OBJECT(note_tree), handler_notebook);
-
-	method = ebook_search_method();
-
-	if(method == SEARCH_METHOD_MULTI){
-		if(note_page != 1)
-			gtk_notebook_set_current_page(GTK_NOTEBOOK(note_tree), 1);
-
-		gtk_notebook_set_current_page(GTK_NOTEBOOK(note_text), 1);
-		gtk_notebook_set_current_page(GTK_NOTEBOOK(note_bar), 0);
-
-	} else 	if(method == SEARCH_METHOD_INTERNET){
-		eb_web = 1;
-		if(note_page != 2)
-			gtk_notebook_set_current_page(GTK_NOTEBOOK(note_tree), 2);
-		gtk_notebook_set_current_page(GTK_NOTEBOOK(note_text), 0);
-		gtk_notebook_set_current_page(GTK_NOTEBOOK(note_bar), 0);
-
-	} else 	if(method == SEARCH_METHOD_FULL_TEXT){
-		if(note_page != 0)
-			gtk_notebook_set_current_page(GTK_NOTEBOOK(note_tree), 0);
-		gtk_notebook_set_current_page(GTK_NOTEBOOK(note_bar), 0);
-
-	} else 	if(method == SEARCH_METHOD_GREP){
-		/* File Search needs the directory tree to pick a search scope. */
-		if(note_page != 3)
-			gtk_notebook_set_current_page(GTK_NOTEBOOK(note_tree), 3);
-		gtk_notebook_set_current_page(GTK_NOTEBOOK(note_bar), 1);
-	} else {
-		gtk_notebook_set_current_page(GTK_NOTEBOOK(note_bar), 0);
+	/* The drop-down is a view now: resolve the chosen id to a method code
+	 * once, here, instead of on every ebook_search_method() call. */
+	text = gtk_combo_box_get_active_id(GTK_COMBO_BOX(combo_method));
+	if(text != NULL){
+		for(i=0 ; search_method[i].name != NULL ; i ++){
+			if(strcmp(text, search_method[i].name) == 0){
+				set_search_method(search_method[i].code);
+				break;
+			}
+		}
 	}
-
-	g_signal_handler_unblock(G_OBJECT(note_tree), handler_notebook);
-
-	change_search_menu(method);
 
 	LOG(LOG_DEBUG, "OUT : method_changed()");
 	return(FALSE);
@@ -487,55 +572,33 @@ void note_switch_page(GtkNotebook *notebook, GtkWidget *page, gint page_num, gpo
 	(void)notebook; (void)page; (void)data;
 	LOG(LOG_DEBUG, "IN : note_switch_page()");
 
-	g_signal_handler_block(G_OBJECT(GTK_COMBO_BOX(combo_method)),
-			       handler_method);
+	/* Appending pages during start-up fires this signal before the other
+	 * widgets exist; start-up ends with an explicit set_search_method()
+	 * call, so there is nothing to do here yet. */
+	if(bstarting_up)
+		return;
 
-	note_page = page_num;
-
-	if((note_text) && GTK_IS_WIDGET(note_text)) {
-		const gchar *active_id = gtk_combo_box_get_active_id(GTK_COMBO_BOX(combo_method));
-		switch (page_num) {
-		case 0:
-			eb_web = 0;
-			gtk_notebook_set_current_page(GTK_NOTEBOOK(note_text), 0);
-
-			/* This page only displays results; switching to it must not
-			 * rewrite the search method.  Doing so used to turn File
-			 * Search results into dictionary hits. */
-			break;
-
-		case 1:
-			eb_web = 0;
-			gtk_notebook_set_current_page(GTK_NOTEBOOK(note_bar), 0);
-			gtk_notebook_set_current_page(GTK_NOTEBOOK(note_text), 1);
-
-			if(!active_id || strcmp(active_id, _("Multiword Search")) != 0)
-				gtk_combo_box_set_active_id(GTK_COMBO_BOX(combo_method), _("Multiword Search"));
-
-			break;
-		case 2:
-			eb_web = 1;
-			gtk_notebook_set_current_page(GTK_NOTEBOOK(note_bar), 0);
-
-			gtk_notebook_set_current_page(GTK_NOTEBOOK(note_text), 0);
-			if(!active_id || strcmp(active_id, _("Internet Search")) != 0)
-				gtk_combo_box_set_active_id(GTK_COMBO_BOX(combo_method), _("Internet Search"));
-
-			break;
-		case 3:
-			eb_web = 0;
-			gtk_notebook_set_current_page(GTK_NOTEBOOK(note_bar), 1);
-
-			if(!active_id || strcmp(active_id, _("File Search")) != 0)
-				gtk_combo_box_set_active_id(GTK_COMBO_BOX(combo_method), _("File Search"));
-
-			break;
-
-		}
+	/* Clicking a tab is just another way of choosing a method.  Let the
+	 * setter update the drop-down and the menu as well, so the pages and
+	 * the selected method can no longer disagree. */
+	switch(page_num){
+	case 1:
+		set_search_method(SEARCH_METHOD_MULTI);
+		break;
+	case 2:
+		set_search_method(SEARCH_METHOD_INTERNET);
+		break;
+	case 3:
+		set_search_method(SEARCH_METHOD_GREP);
+		break;
+	case 0:
+	default:
+		/* Back to the dictionary list: restore the method that was in
+		 * effect before File Search or Internet Search took over. */
+		set_search_method(last_dictionary_method);
+		break;
 	}
 
-	g_signal_handler_unblock(G_OBJECT(GTK_COMBO_BOX(combo_method)),
-				 handler_method);
 	LOG(LOG_DEBUG, "OUT : note_switch_page()");
 }
 
@@ -712,6 +775,9 @@ void create_main_window()
 
 	install_shortcut();
 
+	/* The drop-down shows its first entry on start-up; make the stored
+	 * method agree with it instead of leaving the state implicit. */
+	set_search_method(SEARCH_METHOD_AUTOMATIC);
 
 	// Prevents the cursor from going to widgets except the keyword entry box.
 	gtk_container_foreach(GTK_CONTAINER(main_window), unset_focus, NULL);
@@ -848,6 +914,8 @@ GtkWidget *create_dict_window()
 	for(i=0 ; ; i ++){
 		if(search_method[i].name == NULL)
 			break;
+		if(!method_is_dictionary(search_method[i].code))
+			continue;
 		method_list = g_list_append(method_list, search_method[i].name);
 	}
 	if(i != 0){
@@ -1184,113 +1252,64 @@ void show_text(BOOK_INFO *binfo, char *text, gchar *word)
 
 void select_any_search()
 {
-
 	LOG(LOG_DEBUG, "IN : select_any_search()");
-
-	gtk_combo_box_set_active_id(GTK_COMBO_BOX(combo_method), _("Automatic Search"));
-	gtk_notebook_set_current_page(GTK_NOTEBOOK(note_tree), 0);
-	change_search_menu(SEARCH_METHOD_AUTOMATIC);
-
+	set_search_method(SEARCH_METHOD_AUTOMATIC);
 	LOG(LOG_DEBUG, "OUT : select_any_search()");
 }
 
 void select_exactword_search()
 {
 	LOG(LOG_DEBUG, "IN : select_exactword_search()");
-
-	gtk_combo_box_set_active_id(GTK_COMBO_BOX(combo_method), _("Exactword Search"));
-	gtk_notebook_set_current_page(GTK_NOTEBOOK(note_tree), 0);
-
-	change_search_menu(SEARCH_METHOD_EXACTWORD);
-
+	set_search_method(SEARCH_METHOD_EXACTWORD);
 	LOG(LOG_DEBUG, "OUT : select_exactword_search()");
 }
 
 void select_word_search()
 {
 	LOG(LOG_DEBUG, "IN : select_word_search()");
-
-	gtk_combo_box_set_active_id(GTK_COMBO_BOX(combo_method), _("Forward Search"));
-	gtk_notebook_set_current_page(GTK_NOTEBOOK(note_tree), 0);
-
-	change_search_menu(SEARCH_METHOD_WORD);
-
+	set_search_method(SEARCH_METHOD_WORD);
 	LOG(LOG_DEBUG, "OUT : select_word_search()");
 }
 
 void select_endword_search()
 {
 	LOG(LOG_DEBUG, "IN : select_endword_search()");
-
-	gtk_combo_box_set_active_id(GTK_COMBO_BOX(combo_method), _("Backward Search"));
-	gtk_notebook_set_current_page(GTK_NOTEBOOK(note_tree), 0);
-
-	change_search_menu(SEARCH_METHOD_ENDWORD);
-
+	set_search_method(SEARCH_METHOD_ENDWORD);
 	LOG(LOG_DEBUG, "OUT : select_endword_search()");
 }
 
 void select_keyword_search()
 {
 	LOG(LOG_DEBUG, "IN : select_keyword_search()");
-
-	gtk_combo_box_set_active_id(GTK_COMBO_BOX(combo_method), _("Keyword Search"));
-	gtk_notebook_set_current_page(GTK_NOTEBOOK(note_tree), 0);
-
-	change_search_menu(SEARCH_METHOD_KEYWORD);
-
+	set_search_method(SEARCH_METHOD_KEYWORD);
 	LOG(LOG_DEBUG, "OUT : select_keyword_search()");
 }
 
 void select_multi_search()
 {
 	LOG(LOG_DEBUG, "IN : select_multi_search()");
-
-	gtk_combo_box_set_active_id(GTK_COMBO_BOX(combo_method), _("Multiword Search"));
-	gtk_notebook_set_current_page(GTK_NOTEBOOK(note_tree), 1);
-
-	change_search_menu(SEARCH_METHOD_MULTI);
-
+	set_search_method(SEARCH_METHOD_MULTI);
 	LOG(LOG_DEBUG, "OUT : select_multi_search()");
 }
 
 void select_fulltext_search()
 {
 	LOG(LOG_DEBUG, "IN : select_fulltext_search()");
-
-	gtk_combo_box_set_active_id(GTK_COMBO_BOX(combo_method), _("Full Text Search"));
-	gtk_notebook_set_current_page(GTK_NOTEBOOK(note_tree), 0);
-
-	change_search_menu(SEARCH_METHOD_FULL_TEXT);
-
+	set_search_method(SEARCH_METHOD_FULL_TEXT);
 	LOG(LOG_DEBUG, "OUT : select_fulltext_search()");
 }
-
 
 void select_internet_search()
 {
 	LOG(LOG_DEBUG, "IN : select_internet_search()");
-
-	eb_web = 1;
-	gtk_notebook_set_current_page(GTK_NOTEBOOK(note_text), 0);
-	gtk_combo_box_set_active_id(GTK_COMBO_BOX(combo_method), _("Internet Search"));
-	gtk_notebook_set_current_page(GTK_NOTEBOOK(note_tree), 2);
-
-	change_search_menu(SEARCH_METHOD_INTERNET);
-
+	set_search_method(SEARCH_METHOD_INTERNET);
 	LOG(LOG_DEBUG, "OUT : select_internet_search()");
 }
 
 void select_grep_search()
 {
 	LOG(LOG_DEBUG, "IN : select_grep_search()");
-
-	eb_web = 0;
-	gtk_notebook_set_current_page(GTK_NOTEBOOK(note_text), 0);
-	gtk_combo_box_set_active_id(GTK_COMBO_BOX(combo_method), _("File Search"));
-
-	change_search_menu(SEARCH_METHOD_GREP);
-
+	set_search_method(SEARCH_METHOD_GREP);
 	LOG(LOG_DEBUG, "OUT : select_grep_search()");
 }
 

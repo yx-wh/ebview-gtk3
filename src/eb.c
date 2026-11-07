@@ -71,25 +71,17 @@ gchar *ebook_error_message(EB_Error_Code error_code)
 }
 
 
+/* The selected search method lives here, not in the text of the method
+ * drop-down.  The widgets are views; set_search_method() drives them. */
+static gint current_search_method = SEARCH_METHOD_AUTOMATIC;
+
 gint ebook_search_method(){
-	const char *text;
-	int i;
+	return(current_search_method);
+}
 
-	LOG(LOG_DEBUG, "IN : ebook_search_method()");
-
-	text = gtk_combo_box_get_active_id(GTK_COMBO_BOX(combo_method));
-	if(text == NULL)
-		return(SEARCH_METHOD_UNKNOWN);
-	for(i=0 ; search_method[i].name != 0 ; i ++){
-		if(strcmp(text, search_method[i].name) == 0){
-			LOG(LOG_DEBUG, "OUT : ebook_search_method()=%d", search_method[i].code);
-			return(search_method[i].code);
-		}
-	}
-
-	LOG(LOG_DEBUG, "OUT : ebook_search_method()=%d", SEARCH_METHOD_UNKNOWN);
-
-	return(SEARCH_METHOD_UNKNOWN);
+void ebook_set_search_method(gint method){
+	LOG(LOG_DEBUG, "IN : ebook_set_search_method(%d)", method);
+	current_search_method = method;
 }
 
 BOOK_INFO *load_book(const char *book_path, int subbook_no, gchar *appendix_path, gint appendix_subbook_no, gchar *fg, gchar *bg)

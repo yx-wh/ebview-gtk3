@@ -132,7 +132,7 @@ void show_result_tree()
 	 * method first, and flag the switch so the selector is left alone. */
 	is_grep = (ebook_search_method() == SEARCH_METHOD_GREP);
 
-	gtk_notebook_set_current_page(GTK_NOTEBOOK(note_tree), 0);
+	set_tree_page(0);
 
 	gtk_adjustment_set_value(
 		gtk_scrolled_window_get_vadjustment(GTK_SCROLLED_WINDOW(tree_scroll)), 0);
