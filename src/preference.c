@@ -101,22 +101,27 @@ struct pref_def prefs[] = {
 
 
 
-#ifndef __WIN32__
 /* Find the directory holding the bundled default configuration files.
  *
  * A plain `./build/ebview` used to fail because PACKAGEDIR points at the
  * install prefix. Probe these locations in order instead:
- *   1. $EBVIEW_DATADIR              (explicit override)
- *   2. <exe-dir>/share/ebview      (CMake build tree)
- *   3. <exe-dir>/../share/ebview  (relocated install prefix)
- *   4. PACKAGEDIR                  (system-wide install, original behaviour)
- * A candidate is only accepted when it really contains shortcut.xml.
+ *   1. $EBVIEW_DATADIR             (explicit override)
+ *   2. <exe-dir>/data              (portable Windows package)
+ *   3. <exe-dir>/share/ebview      (CMake build tree)
+ *   4. <exe-dir>/../share/ebview   (relocated install prefix)
+ *   5. PACKAGEDIR                  (system-wide install, original behaviour)
+ * A candidate is only accepted when it really contains shortcut.xml, so a
+ * half-populated directory cannot shadow the next one.  On Windows the
+ * portable layout is <exe-dir>/data (see the zip built by tools/pack_win.sh);
+ * probing it here replaces the old hard-coded "%s\\data" that made every
+ * data file - about.*, shortcut.xml, pixmaps/, help/ - invisible whenever the
+ * package used the share/ebview layout instead.
  */
 static gchar *locate_package_dir(void)
 {
 	const gchar *env_data_dir = g_getenv("EBVIEW_DATADIR");
 	gchar *exe_dir = NULL;
-	gchar *candidates[3];
+	gchar *candidates[4];
 	gchar *result = NULL;
 	guint i;
 
@@ -136,9 +141,10 @@ static gchar *locate_package_dir(void)
 	if(exe_dir == NULL)
 		exe_dir = g_path_get_dirname(exe_path ? exe_path : PACKAGE);
 
-	candidates[0] = g_build_filename(exe_dir, "share", "ebview", NULL);
-	candidates[1] = g_build_filename(exe_dir, "..", "share", "ebview", NULL);
-	candidates[2] = NULL;
+	candidates[0] = g_build_filename(exe_dir, "data", NULL);
+	candidates[1] = g_build_filename(exe_dir, "share", "ebview", NULL);
+	candidates[2] = g_build_filename(exe_dir, "..", "share", "ebview", NULL);
+	candidates[3] = NULL;
 
 	for(i = 0; candidates[i] != NULL; i++){
 		gchar *probe = g_build_filename(candidates[i], "shortcut.xml", NULL);
@@ -154,10 +160,10 @@ static gchar *locate_package_dir(void)
 
 	g_free(candidates[0]);
 	g_free(candidates[1]);
+	g_free(candidates[2]);
 	g_free(exe_dir);
 	return result;
 }
-#endif /* !__WIN32__ */
 
 /* Directory that holds the compiled message catalogues, i.e. the parent of
  * <lang>/LC_MESSAGES/ebview.mo.
@@ -400,14 +406,16 @@ void initialize_preference(){
 	// cache_dir : Directory which has cache files.
 
 #ifdef __WIN32__
+	/* locate_package_dir() derives the directory from exe_path, so call it
+	 * before exe_path is truncated to the executable's directory below. */
+	package_dir = locate_package_dir();
+
 	p = strrchr(exe_path, '\\');
 	if(p != NULL){
 		*p = '\0';
 		home_dir = exe_path;
-		package_dir = g_strdup_printf("%s%sdata", exe_path, DIR_DELIMITER);
 	} else {
 		home_dir = ".";
-		package_dir = g_strdup_printf(".%sdata", DIR_DELIMITER);
 	}
 
 

@@ -80,7 +80,10 @@ pack_one() {
         done
         [ \"\$n\" -gt 0 ] || { echo \"错误：\$PREFIX 下没找到任何依赖 DLL，拒绝打空包\" >&2; exit 1; }
 
-        [ -d \"\$BUILD/share\" ] && cp -r \"\$BUILD/share\" \"\$DEST/\"
+        # 运行期数据（about.*、默认配置 xml、pixmaps/、help/）。Windows 的
+        # 可移植布局是 <exe>\\data，locate_package_dir() 也首选它；构建树里
+        # 数据在 share/ebview 下，所以摊平到 data/ 而不是原样拷 share/。
+        [ -d \"\$BUILD/share/ebview\" ] && cp -r \"\$BUILD/share/ebview\" \"\$DEST/data\"
         [ -d \"\$BUILD/locale\" ] && cp -r \"\$BUILD/locale\" \"\$DEST/\"
 
         # gdk-pixbuf 图片加载器。loaders.cache 里是相对路径（lib\\gdk-pixbuf-2.0\\...），
