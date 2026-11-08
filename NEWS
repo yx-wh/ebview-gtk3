@@ -15,6 +15,11 @@ Bug-fix
   * Crash after removing several dictionaries at once.
   * Up/Down and the property panel did nothing on the dictionary group page
     once it allowed multiple selection.
+  * The Windows package kept its data in share/ebview while the program looked
+    for data/, so the About dialog, the help pages and every bundled default
+    file (shortcuts, filters, ending lists, web search engines, GTK settings,
+    pixmaps) were unavailable.  The data directory is now probed at run time,
+    as on Linux (Windows).
 
 Build
   * ENABLE_ASAN option and "build.sh --asan" for an AddressSanitizer build.
