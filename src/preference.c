@@ -536,6 +536,26 @@ static gboolean ok_pref(GtkWidget *widget,gpointer *data){
 	return(FALSE);
 }
 
+/* Discard: no end_func is called, so nothing is written to the configuration
+ * files, and the main window is not restarted (that is what applies things
+ * like the font).  Pages that edit a global model in place have to roll it
+ * back themselves. */
+static gboolean cancel_pref(GtkWidget *widget, gpointer *data)
+{
+	(void)widget; (void)data;
+	LOG(LOG_DEBUG, "IN : cancel_pref()");
+
+	pref_cancel_dictgroup();
+
+	gtk_grab_remove(pref_dlg);
+	gtk_widget_destroy(pref_dlg);
+	close_popup(NULL, NULL);
+	auto_lookup_resume();
+
+	LOG(LOG_DEBUG, "OUT : cancel_pref()");
+	return(FALSE);
+}
+
 
 void  calculate_font_size(){
 	PangoFontDescription *desc;
@@ -760,6 +780,12 @@ void show_preference()
 	g_signal_connect(G_OBJECT (button), "clicked",
 			 G_CALLBACK(ok_pref), (gpointer)pref_dlg);
 	gtk_widget_grab_default (button);
+
+	button = gtk_button_new_with_label(_("Cancel"));
+	gtk_dialog_add_action_widget(GTK_DIALOG(pref_dlg), button,
+				     GTK_RESPONSE_CANCEL);
+	g_signal_connect(G_OBJECT (button), "clicked",
+			 G_CALLBACK(cancel_pref), (gpointer)pref_dlg);
 
 
 	gtk_widget_show_all(pref_dlg);
