@@ -1435,3 +1435,23 @@ msgstr "ウェブサイトを選択してください。"
 
 #~ msgid "Grep Search"
 #~ msgstr "Grep 検索"
+
+#: src/mainmenu.c
+msgid "Search Disk for Dictionaries..."
+msgstr "辞書をディスクから検索..."
+
+#: src/disksearch.c
+msgid "Select Folder Containing Dictionaries"
+msgstr "辞書があるフォルダを選択"
+
+#: src/disksearch.c
+msgid "Added %d dictionaries."
+msgstr "%d 件の辞書を追加しました。"
+
+#: src/pref_dictgroup.c
+msgid "Specify search depth. 0 = recurse into all subfolders, 1 = only the specified folder, 2 = include its subfolders."
+msgstr "検索の深さを指定します。0 = すべてのサブフォルダを再帰的に検索、1 = 指定フォルダのみ、2 = そのサブフォルダも検索。"
+
+#: src/pref_dictgroup.c src/disksearch.c
+msgid "Added %d dictionaries. %d could not be used (no search method, or the book could not be read) and were skipped."
+msgstr "%d 件の辞書を追加しました。%d 件は使用できないためスキップしました（検索方式がない、または辞書を読み込めません）。"
