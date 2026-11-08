@@ -25,5 +25,6 @@ void uninstall_shortcut();
 void apply_shortcut_to_menuitem(GtkWidget *item, void (*func)(void));
 //gboolean perform_shortcut(GdkEventKey *event);
 gboolean perform_shortcut(gchar *name);
+gboolean shortcut_command_matches(const gchar *name, GdkEventKey *event);
 
 #endif /* __SHORTCUT_H__ */
