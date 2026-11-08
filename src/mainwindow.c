@@ -788,7 +788,13 @@ void create_main_window()
 
 	gtk_widget_show_all (main_window);
 
+	/* X11-only: Windows has no PRIMARY selection (its clipboard is
+	 * CLIPBOARD and is handled by copy_clipboard_win()).  Claiming PRIMARY
+	 * on Windows re-enters OpenClipboard() from inside the Win32 event
+	 * loop, which deadlocked the UI on Windows 7. */
+#ifndef __WIN32__
 	gtk_selection_owner_set(main_window, GDK_SELECTION_PRIMARY,GDK_CURRENT_TIME);
+#endif
 
 	if(!bshow_menu_bar)
 		hide_menu_bar();

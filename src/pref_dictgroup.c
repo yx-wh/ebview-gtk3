@@ -1702,14 +1702,19 @@ static int enumerate_subbook(char *path)
 	error_code = eb_bind(&book, path);
 	if(error_code != EB_SUCCESS){
 		books_skipped++;
-		LOG(LOG_DEBUG,"Failed to bind book. Maybe wrong directory. %s", ebook_error_message(error_code));
+		/* This used to be LOG_DEBUG, which is below the default log level
+		 * and therefore invisible: a failed bind looked like "Search Disk
+		 * did nothing at all". */
+		LOG(LOG_WARNING, "Failed to bind the book '%s' : %s",
+		    path, ebook_error_message(error_code));
 		goto failed;
 	}
 
 	error_code = eb_subbook_list(&book, sublist, &subcount);
 	if(error_code != EB_SUCCESS){
 		books_skipped++;
-		LOG(LOG_DEBUG,"Failed to get subbook list of '%s': %s", path, ebook_error_message(error_code));
+		LOG(LOG_WARNING, "Failed to get a subbook list of '%s' : %s",
+		    path, ebook_error_message(error_code));
 		goto failed;
 	}
 	for(i=0 ; i<subcount ; i++){
@@ -1851,7 +1856,7 @@ static void search_dictionary_recursive(gchar *dirname, gint depth)
 	LOG(LOG_DEBUG, "IN : search_dictionary_recursive(%s, %d)", dirname, depth);
 
 	if((dir = g_dir_open(dirname, 0, NULL)) == NULL){
-		LOG(LOG_DEBUG, "Failed to open directory %s", dirname);
+		LOG(LOG_WARNING, "Failed to open directory %s", dirname);
 		LOG(LOG_DEBUG, "OUT : search_dictionary_recursive()");
 		return;
 	}
