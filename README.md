@@ -214,8 +214,53 @@ build/                构建产物（生成）
 ## Windows 构建
 
 `CMakeLists.txt` 已包含 Windows 分支（`WIN32` 子系统、图标与 VERSIONINFO、
-`winmm` / `ws2_32` / `iconv` / `gnurx`）。推荐在 MSYS2 UCRT64 环境下用
-MinGW-w64 构建，`tools/pack_win.sh` 可收集依赖 DLL 与运行时配置。
+`winmm` / `ws2_32` / `iconv` / `gnurx`）。推荐在 MSYS2 环境下用 MinGW-w64 构建。
+
+Windows 免安装包用 `tools/pack_win.sh` 生成，会收集依赖 DLL、gdk-pixbuf 加载器
+与 fontconfig 配置。默认按 UCRT64 工具链打包（Windows 10/11）：
+
+```sh
+bash tools/pack_win.sh
+# -> build/dist/EBView-<version>-gtk3-win64-ucrt64.zip
+```
+
+要生成 **Windows 7 可用**的包，需要换 MINGW64 工具链单独编译，并用环境变量
+覆盖工具链前缀与构建目录：
+
+```sh
+UCRT=/mingw64 BUILD=/e/git/EBView/build-mingw64 \
+    bash tools/pack_win.sh E:/git/EBView/build-mingw64/dist
+# -> ...-gtk3-win64-mingw64.zip
+```
+
+UCRT64 包依赖 `ucrtbase.dll`，只能在 Windows 10 及以上运行；MINGW64 包使用
+msvcrt，Windows 7 也能运行。
+
+### 发版清单
+
+版本号只在 `CMakeLists.txt` 的 `VERSION` 一处改，它同时驱动 `PACKAGE_VERSION`、
+AppStream 元数据和 Windows 的 VERSIONINFO。
+
+```sh
+./build.sh
+git commit -am "chore(release): bump version to 0.4.1"
+git tag -a v0.4.1 -m "EBView 0.4.1"
+git push origin main v0.4.1
+
+bash tools/make_deb.sh
+git archive --format=tar --prefix=ebview-0.4.1/ v0.4.1 \
+    | xz -9e > build/dist/ebview-0.4.1.tar.xz
+```
+
+几个容易踩的点：
+
+- 标签要先打再 `git archive`，否则 `v0.4.1` 解析不到；
+- `data/` 下的文件由 `file(COPY ...)` 在 **configure** 阶段拷进
+  `build/share/ebview/`，改了 `data/shortcut.xml` 之类必须重跑 `./build.sh`，
+  只执行 `cmake --build` 不会刷新；
+- 用户配置 `~/.ebview/*.xml` 只在文件缺失时才从安装目录复制，**新增的默认快捷键
+  对老用户不生效**，需删文件重新生成或在设置里手动绑定；
+- 发布前清掉 `build/dist/` 里的旧版本产物，避免和校验和文件对不上。
 
 ## 许可证
 
