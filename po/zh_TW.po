@@ -1258,3 +1258,47 @@ msgstr "指定檢索深度。0 = 遞迴搜尋所有子資料夾，1 = 只搜尋�
 #: src/pref_dictgroup.c src/disksearch.c
 msgid "Added %d dictionaries. %d could not be used (no search method, or the book could not be read) and were skipped."
 msgstr "已新增 %d 本辭典，另有 %d 本無法使用（沒有可用檢索方式或無法讀取），已略過。"
+
+#: src/pref_shortcut.c
+msgid "Toggle All Dictionaries"
+msgstr "開關全部辭典"
+
+#: src/pref_shortcut.c
+msgid "Search Only Dictionary No. 1"
+msgstr "只檢索辭典 1"
+
+#: src/pref_shortcut.c
+msgid "Search Only Dictionary No. 2"
+msgstr "只檢索辭典 2"
+
+#: src/pref_shortcut.c
+msgid "Search Only Dictionary No. 3"
+msgstr "只檢索辭典 3"
+
+#: src/pref_shortcut.c
+msgid "Search Only Dictionary No. 4"
+msgstr "只檢索辭典 4"
+
+#: src/pref_shortcut.c
+msgid "Search Only Dictionary No. 5"
+msgstr "只檢索辭典 5"
+
+#: src/pref_shortcut.c
+msgid "Search Only Dictionary No. 6"
+msgstr "只檢索辭典 6"
+
+#: src/pref_shortcut.c
+msgid "Search Only Dictionary No. 7"
+msgstr "只檢索辭典 7"
+
+#: src/pref_shortcut.c
+msgid "Search Only Dictionary No. 8"
+msgstr "只檢索辭典 8"
+
+#: src/pref_shortcut.c
+msgid "Search Only Dictionary No. 9"
+msgstr "只檢索辭典 9"
+
+#: src/pref_shortcut.c
+msgid "Search Only Dictionary No. 10"
+msgstr "只檢索辭典 10"

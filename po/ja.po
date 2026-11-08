@@ -1455,3 +1455,47 @@ msgstr "検索の深さを指定します。0 = すべてのサブフォルダを再帰的に検索、1 = 指定
 #: src/pref_dictgroup.c src/disksearch.c
 msgid "Added %d dictionaries. %d could not be used (no search method, or the book could not be read) and were skipped."
 msgstr "%d 件の辞書を追加しました。%d 件は使用できないためスキップしました（検索方式がない、または辞書を読み込めません）。"
+
+#: src/pref_shortcut.c
+msgid "Toggle All Dictionaries"
+msgstr "全辞書の切り替え"
+
+#: src/pref_shortcut.c
+msgid "Search Only Dictionary No. 1"
+msgstr "辞書1のみを検索"
+
+#: src/pref_shortcut.c
+msgid "Search Only Dictionary No. 2"
+msgstr "辞書2のみを検索"
+
+#: src/pref_shortcut.c
+msgid "Search Only Dictionary No. 3"
+msgstr "辞書3のみを検索"
+
+#: src/pref_shortcut.c
+msgid "Search Only Dictionary No. 4"
+msgstr "辞書4のみを検索"
+
+#: src/pref_shortcut.c
+msgid "Search Only Dictionary No. 5"
+msgstr "辞書5のみを検索"
+
+#: src/pref_shortcut.c
+msgid "Search Only Dictionary No. 6"
+msgstr "辞書6のみを検索"
+
+#: src/pref_shortcut.c
+msgid "Search Only Dictionary No. 7"
+msgstr "辞書7のみを検索"
+
+#: src/pref_shortcut.c
+msgid "Search Only Dictionary No. 8"
+msgstr "辞書8のみを検索"
+
+#: src/pref_shortcut.c
+msgid "Search Only Dictionary No. 9"
+msgstr "辞書9のみを検索"
+
+#: src/pref_shortcut.c
+msgid "Search Only Dictionary No. 10"
+msgstr "辞書10のみを検索"
