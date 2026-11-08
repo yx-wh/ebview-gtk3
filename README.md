@@ -236,6 +236,10 @@ UCRT=/mingw64 BUILD=/e/git/EBView/build-mingw64 \
 UCRT64 包依赖 `ucrtbase.dll`，只能在 Windows 10 及以上运行；MINGW64 包使用
 msvcrt，Windows 7 也能运行。
 
+Windows 上 libeb 4.4.3 还有两个路径问题：`E:\...` 会被当成相对路径，非 ASCII
+词典目录会按 ANSI 代码页打开。使用自建 libeb 时需按 `patches/README.md` 应用
+两个补丁；MSYS2 预编译包若未包含修复，也会表现为词典组扫描失败。
+
 ### 发版清单
 
 版本号只在 `CMakeLists.txt` 的 `VERSION` 一处改，它同时驱动 `PACKAGE_VERSION`、

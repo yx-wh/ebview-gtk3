@@ -1,0 +1,3 @@
+# Patches must keep LF so `patch` context matching works even when the
+# repository is checked out with core.autocrlf=true.
+*.patch -text
