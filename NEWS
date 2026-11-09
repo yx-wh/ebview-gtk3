@@ -28,6 +28,12 @@ Bug-fix
   * Crash when the clipboard held no text, for example after copying an image:
     the window procedure converted an uninitialised pointer, and the clipboard
     memory was unlocked before it had been read (Windows).
+  * Windows: "Search Disk for Dictionaries" aborted the program with
+    g_error("No GSettings schemas are installed on the system") because the
+    package shipped no GSettings schemas and the log handler swallowed the
+    message.  The package now bundles the schemas (and icon themes) and the
+    program points GLib at them on start-up; fatal errors are also written to
+    ebview-error.log next to the executable instead of being silently dropped.
 
 Build
   * ENABLE_ASAN option and "build.sh --asan" for an AddressSanitizer build.

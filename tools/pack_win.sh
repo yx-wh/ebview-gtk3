@@ -95,6 +95,22 @@ pack_one() {
         # fontconfig 需要 fonts.conf，否则初始化失败、所有文字变豆腐块。
         mkdir -p \"\$DEST/etc\"
         [ -d \"\$PREFIX/etc/fonts\" ] && cp -r \"\$PREFIX/etc/fonts\" \"\$DEST/etc/\"
+        # GSettings schemas: 文件选择框要用 org.gtk.Settings.FileChooser，
+        # 缺了它 gtk 会 g_error(No GSettings schemas are installed) 直接 abort。
+        # 图标主题（hicolor/Adwaita）缺了只会报警告但图标会丢。这些资源默认
+        # 只在 MSYS2 前缀里，双击运行时（无 MSYS2 环境变量）找不到，必须随包
+        # 带上，并由 main.c 在启动时把 GSETTINGS_SCHEMA_DIR / XDG_DATA_DIRS 指到 <exe>/share。
+        mkdir -p \"\$DEST/share\"
+        mkdir -p \"\$DEST/share/glib-2.0/schemas\"
+        [ -d \"\$PREFIX/share/glib-2.0/schemas\" ] && cp -r \"\$PREFIX/share/glib-2.0/schemas/.\" \"\$DEST/share/glib-2.0/schemas/\"
+        for d in hicolor Adwaita AdwaitaLegacy; do
+            [ -d \"\$PREFIX/share/icons/\$d\" ] && mkdir -p \"\$DEST/share/icons\" && cp -r \"\$PREFIX/share/icons/\$d\" \"\$DEST/share/icons/\"
+        done
+        [ -d \"\$PREFIX/share/themes/Default\" ] && mkdir -p \"\$DEST/share/themes\" && cp -r \"\$PREFIX/share/themes/Default\" \"\$DEST/share/themes/\"
+
+        # 依赖闭包：把 gdk-pixbuf 图片加载器等运行时插件的依赖（librsvg、libxml2 等）
+        # 也收进来，否则 SVG 加载器会因缺 DLL 断言崩溃、图标全丢。见 tools/close_dlls.sh。
+        bash \"\$SRC/tools/close_dlls.sh\" \"\$DEST\" \"\$PREFIX\"
 
         # 把工具链 / CRT 等溯源信息写进包内。所有采集都允许失败回落 n/a。
         WINNT_RAW=\$(printf '#include <windows.h>\nEBVIEW_WINNT _WIN32_WINNT\n' \

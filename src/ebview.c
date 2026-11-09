@@ -295,8 +295,71 @@ void execute_remote_command(gint argc, gchar **argv){
 #endif /* #if 0 */
 
 #ifdef __WIN32
+#include <io.h>
+
+/* Make the program self-contained: when launched by double-clicking there is no
+ * MSYS2 environment, so point GLib/GTK at the resources shipped next to the exe
+ * (share/).  Without this a file chooser triggers
+ *   g_error("No GSettings schemas are installed on the system") -> abort().
+ * Only overrides the variables when the bundled tree actually exists, so a
+ * from-source build (no share/ next to the exe) is left untouched. */
+static void setup_runtime_paths(void)
+{
+	gchar *exedir;
+	gchar *share;
+	gchar *schemas;
+
+	exedir = g_win32_get_package_installation_directory_of_module(NULL);
+	if(exedir == NULL)
+		return;
+
+	share = g_build_filename(exedir, "share", NULL);
+	schemas = g_build_filename(share, "glib-2.0", "schemas", NULL);
+
+	if(g_file_test(schemas, G_FILE_TEST_IS_DIR)){
+		g_setenv("GSETTINGS_SCHEMA_DIR", schemas, TRUE);
+		if(!g_getenv("XDG_DATA_DIRS") || *g_getenv("XDG_DATA_DIRS") == '\0')
+			g_setenv("XDG_DATA_DIRS", share, TRUE);
+	}
+	g_free(schemas);
+	g_free(share);
+	g_free(exedir);
+}
+
+/* When launched by double-clicking there is no console, so stderr is dropped
+ * on the floor and the message from a fatal g_error()/g_assert() is lost -
+ * the process just abort()s with 0xc0000409 and prints nothing.  Redirect
+ * stderr to <exedir>/ebview-error.log so a crash becomes diagnosable.  A
+ * console-launched process keeps its own stderr. */
+static void setup_crash_log(void)
+{
+	gchar *exedir;
+	gchar *path;
+
+	if(_isatty(_fileno(stderr)))
+		return;
+
+	exedir = g_win32_get_package_installation_directory_of_module(NULL);
+	if(exedir == NULL)
+		exedir = g_get_current_dir();
+
+	path = g_build_filename(exedir, "ebview-error.log", NULL);
+	freopen(path, "a", stderr);
+	setvbuf(stderr, NULL, _IONBF, 0);
+	g_printerr("\n=== ebview %s crash log ===\n", PACKAGE_VERSION);
+	g_free(path);
+	g_free(exedir);
+}
+
+/* Windows has no console, so the original handler discarded every log message
+ * - including the fatal ones that explain a crash.  Keep the suppression of
+ * routine warnings/info/debug, but pipe ERROR and CRITICAL through the default
+ * handler so they reach the redirected stderr (the crash log).  g_log() still
+ * abort()s afterwards, which is what we want. */
 void  my_log_handler(const gchar *log_domain, GLogLevelFlags log_level, const gchar *message, gpointer user_data)
 {
+	if(log_level & (G_LOG_LEVEL_ERROR | G_LOG_LEVEL_CRITICAL))
+		g_log_default_handler(log_domain, log_level, message, user_data);
 }
 
 #endif
@@ -450,6 +513,14 @@ int main( int   argc,
 #endif
 
 	bstarting_up = TRUE;
+
+#ifdef __WIN32__
+	/* Point GLib/GTK at the resources bundled next to the exe (share/) before
+	 * anything initializes GSettings, then route fatal log messages to
+	 * <exedir>/ebview-error.log. */
+	setup_runtime_paths();
+	setup_crash_log();
+#endif
 
 #ifdef __WIN32__
 #ifndef DEBUG
@@ -710,6 +781,7 @@ int main( int   argc,
 	 * once, from inside the main loop. */
 	if(dictgroup_unavailable_count() > 0)
 		g_idle_add(show_unavailable_dicts, NULL);
+
 
 	gtk_main ();
 	ebook_end();
